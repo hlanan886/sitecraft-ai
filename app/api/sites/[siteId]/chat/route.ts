@@ -93,7 +93,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
       }
       // 模型自评（① 做轻）：仅大改动时触发；不通过 → 带 feedback 重生成 1 次
       let finalProvider = provider;
+      let selfEvaluated = false;
+      let evalIssues: string[] = [];
       if (shouldSelfEvaluate(provider.operations)) {
+        selfEvaluated = true;
         event(controller, { type: "status", value: "正在质检本次修改…" });
         const evalRes = await evaluateOperations({
           message: parsed.data.message,
@@ -105,6 +108,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
         });
         if (!evalRes.ok) {
           const feedback = selectRetryIssues(evalRes.issues);
+          evalIssues = evalRes.issues.filter((i) => i.severity === "error").map((i) => `[${i.code}] ${i.message}`);
           if (feedback) {
             const retry = await requestStructuredOperations({
               message: parsed.data.message,
@@ -115,7 +119,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
               sessionContext,
               feedback,
             });
-            if (retry.ok) finalProvider = retry;
+            if (retry.ok) {
+              finalProvider = retry;
+            } else {
+              // H3：重生成失败时记录日志（fail-open 用原 provider），便于排查
+              console.error(`[ai-self-eval] 重生成失败，使用原操作提交: ${retry.error}`);
+            }
           }
         }
       }
@@ -149,7 +158,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
           event(controller, { type: "done", status: "conflict", error: "草稿在 AI 处理期间已被更新，本次操作没有覆盖新版本。", ...snapshot(committed.record) });
         } else if (committed.status === "no_change") {
           if (session) pushAssistantMessage(session, finalProvider.summary);
-          event(controller, { type: "done", status: "no_change", summary: finalProvider.summary, rejected: finalProvider.rejected, ...snapshot(committed.record), model: finalProvider.model, latencyMs: finalProvider.latencyMs });
+          event(controller, { type: "done", status: "no_change", summary: finalProvider.summary, rejected: finalProvider.rejected, ...snapshot(committed.record), model: finalProvider.model, latencyMs: finalProvider.latencyMs, selfEvaluated, evalIssues });
         } else {
           if (session) {
             recordAppliedChange(session, {
@@ -160,7 +169,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
             });
             pushAssistantMessage(session, finalProvider.summary);
           }
-          event(controller, { type: "done", status: "applied", summary: finalProvider.summary, rejected: finalProvider.rejected, changeSet: committed.changeSet, ...snapshot(committed.record), model: finalProvider.model, latencyMs: finalProvider.latencyMs });
+          event(controller, { type: "done", status: "applied", summary: finalProvider.summary, rejected: finalProvider.rejected, changeSet: committed.changeSet, ...snapshot(committed.record), model: finalProvider.model, latencyMs: finalProvider.latencyMs, selfEvaluated, evalIssues });
         }
       } catch (error) {
         event(controller, { type: "done", status: "error", code: "operation_error", error: error instanceof Error ? error.message : "操作应用失败" });
