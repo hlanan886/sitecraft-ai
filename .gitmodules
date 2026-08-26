@@ -1,0 +1,48 @@
+[submodule "vendor/open-source-templates/astrofy"]
+	path = vendor/open-source-templates/astrofy
+	url = https://github.com/manuelernestog/astrofy.git
+[submodule "vendor/open-source-templates/astrogent"]
+	path = vendor/open-source-templates/astrogent
+	url = https://github.com/fauziralpiandi/astrogent.git
+[submodule "vendor/open-source-templates/astropaper"]
+	path = vendor/open-source-templates/astropaper
+	url = https://github.com/satnaing/astro-paper.git
+[submodule "vendor/open-source-templates/astroplate"]
+	path = vendor/open-source-templates/astroplate
+	url = https://github.com/zeon-studio/astroplate.git
+[submodule "vendor/open-source-templates/astrowind"]
+	path = vendor/open-source-templates/astrowind
+	url = https://github.com/arthelokyo/astrowind.git
+[submodule "vendor/open-source-templates/awesome"]
+	path = vendor/open-source-templates/awesome
+	url = https://github.com/ttntm/astro-landing-page.git
+[submodule "vendor/open-source-templates/devportfolio"]
+	path = vendor/open-source-templates/devportfolio
+	url = https://github.com/RyanFitzgerald/devportfolio.git
+[submodule "vendor/open-source-templates/foxi"]
+	path = vendor/open-source-templates/foxi
+	url = https://github.com/oxygenna-themes/foxi-astro-theme.git
+[submodule "vendor/open-source-templates/genai"]
+	path = vendor/open-source-templates/genai
+	url = https://github.com/ctrimm/astro-genai-startup-theme.git
+[submodule "vendor/open-source-templates/landwind"]
+	path = vendor/open-source-templates/landwind
+	url = https://github.com/themesberg/landwind.git
+[submodule "vendor/open-source-templates/moon"]
+	path = vendor/open-source-templates/moon
+	url = https://github.com/mhyfritz/astro-landing-page.git
+[submodule "vendor/open-source-templates/odyssey"]
+	path = vendor/open-source-templates/odyssey
+	url = https://github.com/treefarmstudio/odyssey-theme.git
+[submodule "vendor/open-source-templates/ricofast"]
+	path = vendor/open-source-templates/ricofast
+	url = https://github.com/ricocc/ricoui-saas-template.git
+[submodule "vendor/open-source-templates/small-bis"]
+	path = vendor/open-source-templates/small-bis
+	url = https://github.com/Dillonpw/small-bis.git
+[submodule "vendor/open-source-templates/tailcast"]
+	path = vendor/open-source-templates/tailcast
+	url = https://github.com/matt765/Tailcast.git
+[submodule "vendor/open-source-templates/yukina"]
+	path = vendor/open-source-templates/yukina
+	url = https://github.com/WhitePaper233/yukina.git

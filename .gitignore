@@ -1,0 +1,11 @@
+node_modules
+.next
+.sitecraft-data
+.artifact-work
+artifacts
+outputs
+out
+.env*
+!.env.example
+*.log
+*.tsbuildinfo

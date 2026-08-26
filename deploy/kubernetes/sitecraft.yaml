@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sitecraft-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sitecraft-web
+  template:
+    metadata:
+      labels:
+        app: sitecraft-web
+    spec:
+      containers:
+        - name: web
+          image: sitecraft-web:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: SITE_STORE
+              value: postgres
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: sitecraft-runtime
+                  key: database-url
+            - name: DEEPSEEK_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sitecraft-runtime
+                  key: deepseek-api-key
+            - name: DEEPSEEK_BASE_URL
+              value: https://api.deepseek.com
+            - name: DEEPSEEK_MODEL
+              value: deepseek-v4-flash
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sitecraft-web
+spec:
+  selector:
+    app: sitecraft-web
+  ports:
+    - port: 80
+      targetPort: 3000
