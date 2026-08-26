@@ -152,4 +152,9 @@ test("detects destructive operations that need confirmation", () => {
   assert.match(describeDestructive(removeCard), /删除/);
   assert.match(describeDestructive(hideSection), /隐藏/);
   assert.match(describeDestructive(switchTemplate), /切换模板/);
+
+  // 精确字符串断言：删除和卡片之间不得有多余空格（Codex 验收反馈 D1）
+  assert.equal(describeDestructive(removeCard), "删除核心优势卡片「quality」");
+  const removeService: SiteOperation = { op: "remove_card", section: "services", itemId: "delivery" };
+  assert.equal(describeDestructive(removeService), "删除服务卡片「delivery」");
 });

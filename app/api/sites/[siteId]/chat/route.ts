@@ -2,6 +2,21 @@ import { z } from "zod";
 import { requestStructuredOperations } from "@/lib/ai-provider";
 import { describeDestructive, isDestructiveOperation } from "@/lib/site-operations";
 import { commitOperations, getSite, snapshot } from "@/lib/site-store";
+import {
+  getOrCreateSession,
+  markRevisionDrift,
+  pushAssistantMessage,
+  pushUserMessage,
+  recordAppliedChange,
+  serializeSessionContext,
+  sweepExpiredSessions,
+  type ChatSession,
+} from "@/lib/ai-session";
+import {
+  evaluateOperations,
+  selectRetryIssues,
+  shouldSelfEvaluate,
+} from "@/lib/ai-self-eval";
 
 export const runtime = "nodejs";
 
@@ -9,13 +24,15 @@ const chatSchema = z.object({
   baseRevision: z.number().int().nonnegative(),
   message: z.string().trim().min(1).max(4000),
   selectedTarget: z.string().max(120).nullable().optional(),
-  /** 最近对话上下文（多轮记忆）：[{role, text}]，最多 6 条，每条截断 */
+  /** 最近对话上下文（多轮记忆）：[{role, text}]，最多 6 条，每条截断（过渡期保留，session 优先） */
   context: z.array(z.object({
     role: z.enum(["user", "assistant"]),
     text: z.string().max(500),
   })).max(6).optional(),
   /** 破坏性操作确认标记：为 true 表示用户已确认要执行删除/隐藏/换模板/重排 */
   confirmedDestructive: z.boolean().optional(),
+  /** 服务端会话 id（前端 sessionStorage 生成，每标签页独立） */
+  sessionId: z.string().max(80).optional(),
 });
 
 function event(controller: ReadableStreamDefaultController<Uint8Array>, value: unknown) {
@@ -33,6 +50,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      // 会话接入（③）：有 sessionId 才走服务端会话记忆，否则退回旧 context 路径（向后兼容）
+      let session: ChatSession | null = null;
+      let sessionContext: string | undefined;
+      if (parsed.data.sessionId) {
+        sweepExpiredSessions();
+        session = getOrCreateSession(siteId, parsed.data.sessionId, {
+          baseRevision: current.draft.revision,
+          templateId: current.draft.templateId,
+        });
+        pushUserMessage(session, parsed.data.message);
+        sessionContext = serializeSessionContext(session);
+      }
+
       event(controller, { type: "status", value: "正在调用模型并生成结构化操作…" });
       const provider = await requestStructuredOperations({
         message: parsed.data.message,
@@ -40,9 +70,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
         templateId: current.draft.templateId,
         selectedTarget: parsed.data.selectedTarget,
         context: parsed.data.context,
+        sessionContext,
       });
       if (!provider.ok) {
-        event(controller, { type: "done", status: "error", error: provider.error, code: provider.code, latencyMs: provider.latencyMs });
+        event(controller, { type: "done", status: "error", error: provider.error, code: provider.code, latencyMs: provider.latencyMs, attempts: provider.attemptCount });
         controller.close();
         return;
       }
@@ -60,23 +91,76 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
         controller.close();
         return;
       }
+      // 模型自评（① 做轻）：仅大改动时触发；不通过 → 带 feedback 重生成 1 次
+      let finalProvider = provider;
+      if (shouldSelfEvaluate(provider.operations)) {
+        event(controller, { type: "status", value: "正在质检本次修改…" });
+        const evalRes = await evaluateOperations({
+          message: parsed.data.message,
+          summary: provider.summary,
+          operations: provider.operations,
+          selectedTarget: parsed.data.selectedTarget,
+          contextBlock: sessionContext,
+          templateId: current.draft.templateId,
+        });
+        if (!evalRes.ok) {
+          const feedback = selectRetryIssues(evalRes.issues);
+          if (feedback) {
+            const retry = await requestStructuredOperations({
+              message: parsed.data.message,
+              draft: current.draft,
+              templateId: current.draft.templateId,
+              selectedTarget: parsed.data.selectedTarget,
+              context: parsed.data.context,
+              sessionContext,
+              feedback,
+            });
+            if (retry.ok) finalProvider = retry;
+          }
+        }
+      }
+      // 重生成可能改变破坏性操作 → 重跑确认门（已确认则跳过）
+      const finalDestructive = finalProvider.operations.filter(isDestructiveOperation);
+      if (finalDestructive.length && !parsed.data.confirmedDestructive) {
+        event(controller, {
+          type: "done",
+          status: "need_confirmation",
+          summary: finalProvider.summary,
+          destructive: finalDestructive.map(describeDestructive),
+          model: finalProvider.model,
+          latencyMs: finalProvider.latencyMs,
+        });
+        controller.close();
+        return;
+      }
       event(controller, { type: "status", value: "正在校验操作并保存草稿…" });
       try {
         const committed = await commitOperations({
           siteId,
           baseRevision: parsed.data.baseRevision,
-          operations: provider.operations,
-          summary: provider.summary,
+          operations: finalProvider.operations,
+          summary: finalProvider.summary,
           source: "ai",
-          model: provider.model,
-          latencyMs: provider.latencyMs,
+          model: finalProvider.model,
+          latencyMs: finalProvider.latencyMs,
         });
         if (committed.status === "conflict") {
+          if (session) markRevisionDrift(session);
           event(controller, { type: "done", status: "conflict", error: "草稿在 AI 处理期间已被更新，本次操作没有覆盖新版本。", ...snapshot(committed.record) });
         } else if (committed.status === "no_change") {
-          event(controller, { type: "done", status: "no_change", summary: provider.summary, rejected: provider.rejected, ...snapshot(committed.record), model: provider.model, latencyMs: provider.latencyMs });
+          if (session) pushAssistantMessage(session, finalProvider.summary);
+          event(controller, { type: "done", status: "no_change", summary: finalProvider.summary, rejected: finalProvider.rejected, ...snapshot(committed.record), model: finalProvider.model, latencyMs: finalProvider.latencyMs });
         } else {
-          event(controller, { type: "done", status: "applied", summary: provider.summary, rejected: provider.rejected, changeSet: committed.changeSet, ...snapshot(committed.record), model: provider.model, latencyMs: provider.latencyMs });
+          if (session) {
+            recordAppliedChange(session, {
+              revision: committed.changeSet.revision,
+              summary: finalProvider.summary,
+              targets: committed.changeSet.appliedTargets,
+              draft: committed.record.draft,
+            });
+            pushAssistantMessage(session, finalProvider.summary);
+          }
+          event(controller, { type: "done", status: "applied", summary: finalProvider.summary, rejected: finalProvider.rejected, changeSet: committed.changeSet, ...snapshot(committed.record), model: finalProvider.model, latencyMs: finalProvider.latencyMs });
         }
       } catch (error) {
         event(controller, { type: "done", status: "error", code: "operation_error", error: error instanceof Error ? error.message : "操作应用失败" });

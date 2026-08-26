@@ -102,6 +102,19 @@ export default function WorkspacePage() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [pendingDestructive, setPendingDestructive] = useState<{ message: string; summary: string; destructive: string[] } | null>(null);
+  // 服务端会话 id：sessionStorage 持久化，每标签页独立（③ session 摘要）
+  // SSR 安全：首帧为空串，客户端挂载后生成（避免 window is not defined）
+  const [sessionId, setSessionId] = useState("");
+  useEffect(() => {
+    const existing = window.sessionStorage.getItem("sitecraft-session");
+    if (existing) {
+      setSessionId(existing);
+    } else {
+      const fresh = crypto.randomUUID();
+      window.sessionStorage.setItem("sitecraft-session", fresh);
+      setSessionId(fresh);
+    }
+  }, []);
   const [device, setDevice] = useState<Device>("desktop");
   const [locale, setLocale] = useState<Locale>("zh");
   const [showImport, setShowImport] = useState(false);
@@ -230,7 +243,7 @@ export default function WorkspacePage() {
       const response = await fetch(`/api/sites/${siteId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ baseRevision: draft.revision, message: value, selectedTarget: selectedTarget?.key ?? null, context: recentContext }),
+        body: JSON.stringify({ baseRevision: draft.revision, message: value, selectedTarget: selectedTarget?.key ?? null, context: recentContext, sessionId }),
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({})) as Partial<DraftSnapshot> & { message?: string };
@@ -309,7 +322,7 @@ export default function WorkspacePage() {
       const response = await fetch(`/api/sites/${siteId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ baseRevision: draft.revision, message, selectedTarget: selectedTarget?.key ?? null, context: confirmCtx, confirmedDestructive: true }),
+        body: JSON.stringify({ baseRevision: draft.revision, message, selectedTarget: selectedTarget?.key ?? null, context: confirmCtx, confirmedDestructive: true, sessionId }),
       });
       const reader = response.body?.getReader();
       if (!reader) throw new Error("模型响应不可读取");

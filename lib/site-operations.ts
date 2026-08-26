@@ -429,7 +429,7 @@ export function isDestructiveOperation(operation: SiteOperation): boolean {
 export function describeDestructive(operation: SiteOperation): string {
   switch (operation.op) {
     case "remove_card":
-      return `删除 ${operation.section === "features" ? "核心优势" : "服务"}卡片「${operation.itemId}」`;
+      return `删除${operation.section === "features" ? "核心优势" : "服务"}卡片「${operation.itemId}」`;
     case "set_section_visibility":
       return `隐藏「${operation.section}」区块`;
     case "set_template":

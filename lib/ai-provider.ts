@@ -7,10 +7,11 @@ import {
   type SiteOperation,
 } from "@/lib/site-operations";
 import { buildDraftIndex } from "@/lib/draft-index";
+import { withLimitedRetry, type RetryTaskResult } from "@/lib/ai-retry";
 
 export type ProviderResult =
-  | { ok: true; summary: string; operations: SiteOperation[]; rejected: string[]; model: string; latencyMs: number }
-  | { ok: false; error: string; code: "not_configured" | "provider_error" | "invalid_output" | "timeout"; model: string | null; latencyMs: number };
+  | { ok: true; summary: string; operations: SiteOperation[]; rejected: string[]; model: string; latencyMs: number; attemptCount: number }
+  | { ok: false; error: string; code: "not_configured" | "provider_error" | "invalid_output" | "timeout"; model: string | null; latencyMs: number; attemptCount: number };
 
 function providerConfig() {
   return {
@@ -79,11 +80,15 @@ export async function requestStructuredOperations(args: {
   selectedTarget?: string | null;
   /** 最近对话上下文（多轮记忆）：[{role, text}]，按时间正序 */
   context?: Array<{ role: "user" | "assistant"; text: string }>;
+  /** 服务端会话记忆块（③ session 摘要），优先于 context */
+  sessionContext?: string;
+  /** 外部反馈（自评重生成等），拼在用户指令后 */
+  feedback?: string;
 }): Promise<ProviderResult> {
   const startedAt = Date.now();
   const { baseURL, apiKey, model } = providerConfig();
   if (!apiKey || !model) {
-    return { ok: false, code: "not_configured", error: "尚未配置 DeepSeek API，系统不会执行本地伪修改。", model: null, latencyMs: 0 };
+    return { ok: false, code: "not_configured", error: "尚未配置 DeepSeek API，系统不会执行本地伪修改。", model: null, latencyMs: 0, attemptCount: 0 };
   }
   const template = getTemplate(args.templateId);
   const profile = template.promptProfile;
@@ -98,8 +103,10 @@ export async function requestStructuredOperations(args: {
   const templateIds = new Set(templates.map((item) => item.id));
   let lastError = "模型没有返回有效的结构化操作。";
   let retryFeedback = "";
+  let attemptsMade = 0;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
+    attemptsMade += 1;
     try {
       const response = await fetch(`${baseURL}/chat/completions`, {
         method: "POST",
@@ -116,7 +123,7 @@ export async function requestStructuredOperations(args: {
             },
             {
               role: "user",
-              content: `当前修改目标：${args.selectedTarget || "未指定，按指令定位"}\n${args.context?.length ? `最近对话：\n${args.context.map((m) => `${m.role === "user" ? "用户" : "助手"}：${m.text}`).join("\n")}\n\n` : ""}当前草稿 JSON：${buildDraftIndex(args.draft, args.message)}\n\n用户指令：${args.message}${attempt ? `\n\n上一次输出未通过 Schema：${retryFeedback}。请只修正格式和非法字段，严格按操作格式重试。` : ""}`,
+              content: `当前修改目标：${args.selectedTarget || "未指定，按指令定位"}\n${args.sessionContext ? `${args.sessionContext}\n\n` : args.context?.length ? `最近对话：\n${args.context.map((m) => `${m.role === "user" ? "用户" : "助手"}：${m.text}`).join("\n")}\n\n` : ""}当前草稿 JSON：${buildDraftIndex(args.draft, args.message)}\n\n用户指令：${args.message}${args.feedback ? `\n\n模型自评反馈：${args.feedback}。请针对反馈修正后重试。` : ""}${attempt ? `\n\n上一次输出未通过 Schema：${retryFeedback}。请只修正格式和非法字段，严格按操作格式重试。` : ""}`,
             },
           ],
         }),
@@ -141,11 +148,12 @@ export async function requestStructuredOperations(args: {
         continue;
       }
       const validated = validateAIOperations(args.message, parsedChange.data.operations, templateIds);
-      return { ok: true, summary: parsedChange.data.summary, operations: validated.operations, rejected: validated.rejected, model, latencyMs: Date.now() - startedAt };
+      return { ok: true, summary: parsedChange.data.summary, operations: validated.operations, rejected: validated.rejected, model, latencyMs: Date.now() - startedAt, attemptCount: attemptsMade };
     } catch (error) {
       const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
       lastError = timedOut ? "DeepSeek 请求超时" : `无法连接 DeepSeek：${error instanceof Error ? error.message : "网络错误"}`;
-      if (timedOut) break;
+      // 超时也走重试（continue），让外层 attempt 循环在 2 次内再试一次（Codex 反馈 D2）
+      // 网络错误同样继续重试；总尝试次数由 attempt<2 封顶
     }
   }
   return {
@@ -154,5 +162,6 @@ export async function requestStructuredOperations(args: {
     error: lastError,
     model,
     latencyMs: Date.now() - startedAt,
+    attemptCount: attemptsMade,
   };
 }
