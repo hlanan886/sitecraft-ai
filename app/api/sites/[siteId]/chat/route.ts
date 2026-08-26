@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { requestStructuredOperations } from "@/lib/ai-provider";
+import { describeDestructive, isDestructiveOperation } from "@/lib/site-operations";
 import { commitOperations, getSite, snapshot } from "@/lib/site-store";
 
 export const runtime = "nodejs";
@@ -13,6 +14,8 @@ const chatSchema = z.object({
     role: z.enum(["user", "assistant"]),
     text: z.string().max(500),
   })).max(6).optional(),
+  /** 破坏性操作确认标记：为 true 表示用户已确认要执行删除/隐藏/换模板/重排 */
+  confirmedDestructive: z.boolean().optional(),
 });
 
 function event(controller: ReadableStreamDefaultController<Uint8Array>, value: unknown) {
@@ -40,6 +43,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
       });
       if (!provider.ok) {
         event(controller, { type: "done", status: "error", error: provider.error, code: provider.code, latencyMs: provider.latencyMs });
+        controller.close();
+        return;
+      }
+      // 破坏性操作确认：含删除/隐藏/换模板/重排且用户未确认 → 暂停，等确认
+      const destructiveOps = provider.operations.filter(isDestructiveOperation);
+      if (destructiveOps.length && !parsed.data.confirmedDestructive) {
+        event(controller, {
+          type: "done",
+          status: "need_confirmation",
+          summary: provider.summary,
+          destructive: destructiveOps.map(describeDestructive),
+          model: provider.model,
+          latencyMs: provider.latencyMs,
+        });
         controller.close();
         return;
       }

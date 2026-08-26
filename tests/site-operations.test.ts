@@ -3,7 +3,10 @@ import test from "node:test";
 import { defaultDraft } from "../lib/site-document.ts";
 import {
   applySiteOperations,
+  describeDestructive,
+  isDestructiveOperation,
   validateAIOperations,
+  type AIOperation,
   type SiteOperation,
 } from "../lib/site-operations.ts";
 
@@ -66,6 +69,42 @@ test("allows a template switch with English 'switch template' order", () => {
   assert.equal(validated.operations[0].op, "set_template");
 });
 
+test("rejects english operations when user says 别动英文", () => {
+  const ops: AIOperation[] = [
+    { op: "set_text", target: "hero.title", locale: "en", value: "x" },
+    { op: "set_text", target: "hero.title", locale: "zh", value: "y" },
+  ];
+  const validated = validateAIOperations("别动英文，把中文首屏改好", ops, templateIds);
+  assert.equal(validated.operations.length, 1);
+  const [zhOp] = validated.operations;
+  assert.ok(zhOp.op === "set_text");
+  assert.equal(zhOp.locale, "zh");
+  assert.match(validated.rejected[0], /英文/);
+});
+
+test("allows only zh operations when user says 只改中文", () => {
+  const ops: AIOperation[] = [
+    { op: "set_text", target: "hero.title", locale: "en", value: "x" },
+    { op: "set_text", target: "hero.title", locale: "zh", value: "y" },
+  ];
+  const validated = validateAIOperations("只改中文，别动英文", ops, templateIds);
+  assert.equal(validated.operations.length, 1);
+  const [zhOp2] = validated.operations;
+  assert.ok(zhOp2.op === "set_text");
+  assert.equal(zhOp2.locale, "zh");
+});
+
+test("does not over-restrict on bilingual or normal instructions", () => {
+  const ops: AIOperation[] = [
+    { op: "set_text", target: "hero.title", locale: "en", value: "x" },
+    { op: "set_text", target: "hero.title", locale: "zh", value: "y" },
+  ];
+  const both = validateAIOperations("中英文都改一下首屏", ops, templateIds);
+  assert.equal(both.operations.length, 2);
+  const normal = validateAIOperations("把首屏标题改一下", ops, templateIds);
+  assert.equal(normal.operations.length, 2);
+});
+
 test("does not increment revision for a no-op", () => {
   const operation: SiteOperation = {
     op: "set_text",
@@ -93,4 +132,24 @@ test("replaces imported products as one reversible draft change", () => {
   assert.equal(result.draft.products[0].sku, "NEW-001");
   const restored = applySiteOperations(result.draft, result.inverseOperations, { templateIds, lastChange: "Undo" });
   assert.deepEqual(restored.draft.products, defaultDraft.products);
+});
+
+test("detects destructive operations that need confirmation", () => {
+  const removeCard: SiteOperation = { op: "remove_card", section: "features", itemId: "quality" };
+  const hideSection: SiteOperation = { op: "set_section_visibility", section: "about", visible: false };
+  const showSection: SiteOperation = { op: "set_section_visibility", section: "about", visible: true };
+  const switchTemplate: SiteOperation = { op: "set_template", templateId: "kindred" };
+  const reorder: SiteOperation = { op: "reorder_sections", order: ["about", "features", "services", "products", "contact"] };
+  const editText: SiteOperation = { op: "set_text", target: "hero.title", locale: "zh", value: "x" };
+
+  assert.equal(isDestructiveOperation(removeCard), true);
+  assert.equal(isDestructiveOperation(hideSection), true);
+  assert.equal(isDestructiveOperation(showSection), false); // 显示区块不破坏
+  assert.equal(isDestructiveOperation(switchTemplate), true);
+  assert.equal(isDestructiveOperation(reorder), true);
+  assert.equal(isDestructiveOperation(editText), false);
+
+  assert.match(describeDestructive(removeCard), /删除/);
+  assert.match(describeDestructive(hideSection), /隐藏/);
+  assert.match(describeDestructive(switchTemplate), /切换模板/);
 });

@@ -347,19 +347,98 @@ export function validateAIOperations(
     /(?:模板|版式).{0,10}(?:换|切换|改用|更换)/i.test(message) ||
     /(?:template).{0,20}(?:switch|change|use)/i.test(message) ||
     /(?:switch|change|use).{0,20}(?:template)/i.test(message);
+
+  // 语言约束 conformance：识别用户对语言范围的明确限定
+  // 两类：(1) 负面限定 forbid——"别动英文/不要改中文/不动英文" 拒绝该语言 op
+  //       (2) 正面限定 allow——"只改中文/仅英文" 只允许该语言 op
+  // 仅当出现明确限定词才生效，避免误伤普通指令
+  const localeGuard = parseLocaleGuard(message);
+
   const accepted = operations.filter((operation) => {
-    if (operation.op !== "set_template") return true;
-    if (!explicitTemplateSwitch) {
-      rejected.push("用户没有明确要求更换模板，已拒绝模板切换");
-      return false;
+    if (operation.op === "set_template") {
+      if (!explicitTemplateSwitch) {
+        rejected.push("用户没有明确要求更换模板，已拒绝模板切换");
+        return false;
+      }
+      if (!templateIds.has(operation.templateId)) {
+        rejected.push(`模板 ${operation.templateId} 不在白名单中`);
+        return false;
+      }
+      return true;
     }
-    if (!templateIds.has(operation.templateId)) {
-      rejected.push(`模板 ${operation.templateId} 不在白名单中`);
-      return false;
+    // 语言越界校验
+    const opLocale = "locale" in operation && operation.locale ? operation.locale : null;
+    if (opLocale && localeGuard) {
+      if (localeGuard.forbid === opLocale) {
+        rejected.push(`用户明确不要改动${opLocale === "zh" ? "中文" : "英文"}，已拒绝 ${operation.op} 对${opLocale === "zh" ? "中文" : "英文"}的修改`);
+        return false;
+      }
+      if (localeGuard.allow && localeGuard.allow !== opLocale) {
+        rejected.push(`用户限定只修改${localeGuard.allow === "zh" ? "中文" : "英文"}，已拒绝 ${operation.op} 对${opLocale === "zh" ? "中文" : "英文"}的修改`);
+        return false;
+      }
     }
     return true;
   });
   return { operations: accepted, rejected };
+}
+
+type LocaleGuard = { forbid?: "zh" | "en"; allow?: "zh" | "en" };
+
+/**
+ * 解析用户指令中的语言范围限定。
+ * 返回 LocaleGuard（forbid/allow 可能并存，如"只改中文，别动英文"）。
+ * 返回 null 表示未限定。
+ * 注意"中英双语/中英文"整体限定不算单语限定。
+ */
+function parseLocaleGuard(message: string): LocaleGuard | null {
+  // 排除"中英"连用（双语不算单语限定）
+  if (/中英|中英文|中英双语|中英两种|中英文都/i.test(message)) return null;
+  const guard: LocaleGuard = {};
+  // 负面限定：别/不要/不用/不动/别动/勿 + 语言词（中文限 2 字符距离，避免"别动英文，把中文"误判）
+  const negEn = /(?:别|不要|不用|不动|别动|勿).{0,4}(?:英文|英语)/i.test(message);
+  const negZh = /(?:别|不要|不用|不动|别动|勿).{0,2}(?:中文|汉语)/i.test(message);
+  if (negEn && !negZh) guard.forbid = "en";
+  else if (negZh && !negEn) guard.forbid = "zh";
+  // 正面限定：只/仅/只管/就/只改/保持/维持 + 语言词（英文距离放宽到 6，支持 "only change english"）
+  const posEn = /(?:只|仅|只管|就|只改|保持|维持).{0,2}(?:英文|英语)|(?:only|just|keep|change).{0,10}english/i.test(message);
+  const posZh = /(?:只|仅|只管|就|只改|保持|维持).{0,2}(?:中文|汉语)/i.test(message);
+  if (posEn && !posZh) guard.allow = "en";
+  else if (posZh && !posEn) guard.allow = "zh";
+  return guard.forbid || guard.allow ? guard : null;
+}
+
+/**
+ * 判定某操作是否属于"破坏性操作"（删除/隐藏/换模板/重排），
+ * 这类操作应在提交前让用户确认，避免误删误改。
+ */
+export function isDestructiveOperation(operation: SiteOperation): boolean {
+  switch (operation.op) {
+    case "remove_card":
+    case "set_template":
+    case "reorder_sections":
+      return true;
+    case "set_section_visibility":
+      return operation.visible === false;
+    default:
+      return false;
+  }
+}
+
+/** 破坏性操作的简短描述，用于确认提示 */
+export function describeDestructive(operation: SiteOperation): string {
+  switch (operation.op) {
+    case "remove_card":
+      return `删除 ${operation.section === "features" ? "核心优势" : "服务"}卡片「${operation.itemId}」`;
+    case "set_section_visibility":
+      return `隐藏「${operation.section}」区块`;
+    case "set_template":
+      return `切换模板到 ${operation.templateId}`;
+    case "reorder_sections":
+      return "调整区块显示顺序";
+    default:
+      return operation.op;
+  }
 }
 
 export function describeTarget(target: string) {

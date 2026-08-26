@@ -246,3 +246,30 @@
 | R2 "刚才改的标题再改短一点" | HTTP 409 崩溃 | 带 context 正确识别"刚才"指代第1轮改的"智能产线集成"，缩短为"产线集成"，HTTP 200 |
 | R3 首屏文案长度 | 副标题 40+ 字 | 中文标题 9 字、副标题 28 字 |
 
+
+---
+
+# 阶段 G（agentops 体检优化）记录
+
+## G1 语言 conformance（只改点名语言）
+- `validateAIOperations` 增加 `parseLocaleGuard`：识别"别动英文/只改中文/only english"等限定，违反的 op 拒绝
+- 实测 9 组用例全对（含"别动英文，把中文首屏改好"→ 只改中文）
+- 真机验证：指令"别动英文，把中文首屏标题改好" → 仅 hero.title zh 一个操作
+
+## G2 内容索引化（防 1000 商品爆 token）
+- 新增 `lib/draft-index.ts`：商品 >20 时截断为 20 个（用户指令提到的 SKU 优先保留），附加截断提示
+- ≤20 商品时原样返回，兼容现有行为
+- 3 个单元测试覆盖：≤20 兼容、>20 截断+提示、SKU 优先
+
+## G4 破坏性操作确认（防误删误改）
+- `site-operations.ts` 新增 `isDestructiveOperation`/`describeDestructive`
+- chat 路由：含删除/隐藏/换模板/重排且未确认 → 返回 `need_confirmation`（不提交）
+- 前端：弹确认框，确认后带 `confirmedDestructive: true` 重发
+- 真机验证：未确认 → need_confirmation+草稿未变；确认 → applied
+
+## 阶段C-2 验收
+- `npm test`：14/14 全绿（新增 G1 语言×3、G2 索引×3、G4 破坏性×1）
+- `npm run typecheck`：无错误
+- `git diff --check`：exit 0
+- `npm run test:three-sites`：三站零回归（nova/harborlink/axiomflow）
+- 真机验证：G4 未确认→need_confirmation、确认→applied；G1 只改中文

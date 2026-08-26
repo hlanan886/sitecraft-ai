@@ -6,6 +6,7 @@ import {
   type AIChange,
   type SiteOperation,
 } from "@/lib/site-operations";
+import { buildDraftIndex } from "@/lib/draft-index";
 
 export type ProviderResult =
   | { ok: true; summary: string; operations: SiteOperation[]; rejected: string[]; model: string; latencyMs: number }
@@ -32,6 +33,11 @@ function parseModelJson(content: unknown): { data: AIChange | null; error: strin
   }
 }
 
+/**
+ * 把草稿压缩成精简索引，避免整包草稿（尤其 1000 商品）撑爆上下文。
+ * 商品 ≤ PRODUCT_INDEX_LIMIT 时返回完整草稿 JSON（兼容现有行为）；
+ * 商品超出时，商品部分截断为 "SKU | 名称 | 分类" 列表，用户指令中明确提到的 SKU 优先完整保留。
+ */
 export function getAIProviderStatus() {
   const config = providerConfig();
   const configured = Boolean(config.apiKey && config.model);
@@ -110,7 +116,7 @@ export async function requestStructuredOperations(args: {
             },
             {
               role: "user",
-              content: `当前修改目标：${args.selectedTarget || "未指定，按指令定位"}\n${args.context?.length ? `最近对话：\n${args.context.map((m) => `${m.role === "user" ? "用户" : "助手"}：${m.text}`).join("\n")}\n\n` : ""}当前草稿 JSON：${JSON.stringify(args.draft)}\n\n用户指令：${args.message}${attempt ? `\n\n上一次输出未通过 Schema：${retryFeedback}。请只修正格式和非法字段，严格按操作格式重试。` : ""}`,
+              content: `当前修改目标：${args.selectedTarget || "未指定，按指令定位"}\n${args.context?.length ? `最近对话：\n${args.context.map((m) => `${m.role === "user" ? "用户" : "助手"}：${m.text}`).join("\n")}\n\n` : ""}当前草稿 JSON：${buildDraftIndex(args.draft, args.message)}\n\n用户指令：${args.message}${attempt ? `\n\n上一次输出未通过 Schema：${retryFeedback}。请只修正格式和非法字段，严格按操作格式重试。` : ""}`,
             },
           ],
         }),

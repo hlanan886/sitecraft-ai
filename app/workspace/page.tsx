@@ -101,6 +101,7 @@ export default function WorkspacePage() {
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
+  const [pendingDestructive, setPendingDestructive] = useState<{ message: string; summary: string; destructive: string[] } | null>(null);
   const [device, setDevice] = useState<Device>("desktop");
   const [locale, setLocale] = useState<Locale>("zh");
   const [showImport, setShowImport] = useState(false);
@@ -267,12 +268,78 @@ export default function WorkspacePage() {
         setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "no_change", text: "模型没有生成可应用的内容差异，草稿和模板均未修改。", change: String(doneEvent.summary || "没有变化"), meta: latency }]);
       } else if (status === "conflict") {
         setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "warning", text: String(doneEvent.error), change: "没有覆盖较新的草稿" }]);
+      } else if (status === "need_confirmation") {
+        // 破坏性操作需要确认：暂存待确认内容，前端弹确认框
+        const destructive = Array.isArray(doneEvent.destructive) ? (doneEvent.destructive as string[]) : [];
+        setPendingDestructive({ message: value, summary: String(doneEvent.summary ?? ""), destructive });
+        setMessages((items) => [...items, {
+          id: crypto.randomUUID(), role: "assistant", status: "warning",
+          text: "本次修改包含需要确认的操作。",
+          change: destructive.join("、"),
+        }]);
       } else {
         throw new Error(String(doneEvent.error || "模型操作失败"));
       }
       setSelectedTarget(null);
     } catch (error) {
       setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "error", text: error instanceof Error ? error.message : "AI 修改失败", change: "本次没有修改草稿" }]);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmDestructive = async (confirmed: boolean) => {
+    if (!pendingDestructive) return;
+    const { message, summary } = pendingDestructive;
+    setPendingDestructive(null);
+    if (!confirmed) {
+      setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "warning", text: "已取消本次修改。", change: summary }]);
+      return;
+    }
+    // 用户确认后带 confirmedDestructive 重发
+    const confirmCtx = messages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .filter((m) => m.id !== "welcome" && m.id !== "guide")
+      .slice(-6)
+      .map((m) => ({ role: m.role, text: m.text.slice(0, 200) }));
+    setInput(message);
+    setBusy(true);
+    setBusyText("正在保存…");
+    try {
+      const response = await fetch(`/api/sites/${siteId}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ baseRevision: draft.revision, message, selectedTarget: selectedTarget?.key ?? null, context: confirmCtx, confirmedDestructive: true }),
+      });
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("模型响应不可读取");
+      const decoder = new TextDecoder();
+      let raw = "";
+      let doneEvent: Record<string, unknown> | undefined;
+      while (true) {
+        const result = await reader.read();
+        raw += decoder.decode(result.value ?? new Uint8Array(), { stream: !result.done });
+        const events = readSseEvents(raw);
+        doneEvent = events.find((item) => item.type === "done");
+        if (result.done) break;
+      }
+      if (!doneEvent) throw new Error("模型没有返回完成事件");
+      const st = String(doneEvent.status);
+      if ((st === "applied" || st === "no_change" || st === "conflict") && doneEvent.draft) adoptSnapshot(doneEvent as unknown as DraftSnapshot);
+      if (st === "applied") {
+        const changeSet = doneEvent.changeSet as { revision: number; appliedTargets: string[] };
+        setExpectedTargets(changeSet.appliedTargets);
+        setPreviewState("loading");
+        setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "applied", revision: changeSet.revision, text: `草稿 v${changeSet.revision} 已保存。`, change: String(doneEvent.summary) }]);
+      } else if (st === "no_change") {
+        setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "no_change", text: "模型没有生成可应用的内容差异。", change: String(doneEvent.summary || "没有变化") }]);
+      } else if (st === "conflict") {
+        setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "warning", text: String(doneEvent.error), change: "没有覆盖较新的草稿" }]);
+      } else {
+        setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "error", text: String(doneEvent.error || "操作失败"), change: "本次没有修改草稿" }]);
+      }
+    } catch (error) {
+      setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "error", text: error instanceof Error ? error.message : "确认操作失败", change: "本次没有修改草稿" }]);
     } finally {
       setBusy(false);
     }
@@ -407,6 +474,16 @@ export default function WorkspacePage() {
         </div>
         <div className="chat-input-wrap">
           {selectedTarget && <div className="chat-target"><span>正在修改：{selectedTarget.label}</span><button aria-label="清除修改目标" onClick={() => setSelectedTarget(null)} type="button"><X size={12} /></button></div>}
+          {pendingDestructive && (
+            <div className="destructive-confirm" role="alert">
+              <div className="destructive-confirm-title"><AlertCircle size={13} />确认执行以下操作</div>
+              <ul className="destructive-confirm-list">{pendingDestructive.destructive.map((item) => <li key={item}>{item}</li>)}</ul>
+              <div className="destructive-confirm-actions">
+                <button className="secondary-button" onClick={() => void confirmDestructive(false)} disabled={busy}>取消</button>
+                <button className="primary-button" onClick={() => void confirmDestructive(true)} disabled={busy}>确认执行</button>
+              </div>
+            </div>
+          )}
           <form className="chat-input" onSubmit={submitChat}>
             <textarea ref={inputRef} value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void submitChat(); } }} placeholder="告诉 AI 你想怎么改..." rows={2} />
             <button className="send-button" type="submit" disabled={!input.trim() || busy || !draftReady} aria-label="发送"><Send size={14} /></button>
