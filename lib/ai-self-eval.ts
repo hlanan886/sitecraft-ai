@@ -47,11 +47,85 @@ export type SelfEvalArgs = {
   templateId: string;
 };
 
+/** 指令级多目标连接词（"另外/同时/以及/还有/顺便"）——用户明显要求改多个地方 */
+const MULTI_TARGET_PATTERN = /另外|同时|以及|还有|顺便|再加上|一并/;
+
+/** 指令中提到的业务模块关键词 */
+const MODULE_KEYWORDS: Array<[string, RegExp]> = [
+  ["hero", /首屏|标题|副标题|按钮|导航/],
+  ["about", /关于|公司简介/],
+  ["features", /优势|核心能力|特点/],
+  ["services", /服务/],
+  ["products", /产品|商品|SKU/],
+  ["contact", /联系|邮箱|电话|地址/],
+  ["brand", /公司名|站点名|行业|目标/],
+  ["template", /模板/],
+];
+
 /**
- * 是否触发自评：≥3 个操作，或含破坏性操作（删除/隐藏/换模板/重排）。
+ * 是否触发自评（P3 扩展，Codex 验收反馈）：
+ * 1. 操作数 >= 3
+ * 2. 涉及两个及以上不同业务模块
+ * 3. 包含破坏性操作（删除/隐藏/换模板/重排）
+ * 4. 用户指令本身包含多目标连接词且提到多个不同模块（防止模型只生成部分目标时漏检）
  */
-export function shouldSelfEvaluate(operations: readonly SiteOperation[]): boolean {
-  return operations.length >= MIN_SELF_EVAL_OPERATIONS || operations.some(isDestructiveOperation);
+export function shouldSelfEvaluate(
+  operations: readonly SiteOperation[],
+  message?: string,
+): boolean {
+  if (operations.length >= MIN_SELF_EVAL_OPERATIONS) return true;
+  if (operations.some(isDestructiveOperation)) return true;
+  // 跨模块：统计涉及的不同业务模块数
+  const modules = new Set<string>();
+  for (const op of operations) {
+    const m = opModule(op);
+    if (m) modules.add(m);
+  }
+  if (modules.size >= 2) return true;
+  // 指令级多目标：用户明确要求改多个模块（即使模型只生成部分）
+  if (message && MULTI_TARGET_PATTERN.test(message)) {
+    const mentioned = new Set<string>();
+    for (const [name, re] of MODULE_KEYWORDS) {
+      if (re.test(message)) mentioned.add(name);
+    }
+    if (mentioned.size >= 2) return true;
+  }
+  return false;
+}
+
+/** 操作所属业务模块（用于跨模块判定） */
+function opModule(op: SiteOperation): string | null {
+  switch (op.op) {
+    case "set_text": {
+      const target = op.target;
+      if (target.startsWith("hero.") || target.startsWith("navigation.")) return "hero";
+      if (target.startsWith("about.")) return "about";
+      if (target.startsWith("features.")) return "features";
+      if (target.startsWith("services.")) return "services";
+      if (target.startsWith("products.")) return "products";
+      if (target.startsWith("contact.")) return "contact";
+      if (target === "siteName" || target === "companyName" || target === "industry" || target === "goal") return "brand";
+      return "other";
+    }
+    case "update_card":
+    case "add_card":
+    case "remove_card":
+      return op.section;
+    case "update_product":
+      return "products";
+    case "set_section_visibility":
+      return op.section;
+    case "set_template":
+      return "template";
+    case "reorder_sections":
+      return "structure";
+    case "replace_products":
+      return "products";
+    case "replace_draft":
+      return "draft";
+    default:
+      return null;
+  }
 }
 
 function evalProviderConfig() {

@@ -36,6 +36,39 @@ test("shouldSelfEvaluate: triggers on destructive operations", () => {
   assert.equal(shouldSelfEvaluate(withTemplate), true);
 });
 
+test("shouldSelfEvaluate: triggers on cross-module 2-operation edit (P3)", () => {
+  // 两目标跨模块（features 卡片 + companyName）→ 应触发自评
+  const crossModule: SiteOperation[] = [
+    { op: "update_card", section: "features", index: 2, locale: "zh", body: "统一询价" },
+    { op: "set_text", target: "companyName", locale: "zh", value: "华辰精工" },
+  ];
+  assert.equal(shouldSelfEvaluate(crossModule), true);
+});
+
+test("shouldSelfEvaluate: does not trigger on same-module 2-field edit (P3)", () => {
+  // 同一模块（hero）两个字段 → 不触发（避免不必要自评）
+  const sameModule: SiteOperation[] = [
+    { op: "set_text", target: "hero.title", locale: "zh", value: "x" },
+    { op: "set_text", target: "hero.subtitle", locale: "zh", value: "y" },
+  ];
+  assert.equal(shouldSelfEvaluate(sameModule), false);
+  // 同一卡片 title+body → 不触发
+  const sameCard: SiteOperation[] = [
+    { op: "update_card", section: "services", index: 0, locale: "zh", title: "a", body: "b" },
+  ];
+  assert.equal(shouldSelfEvaluate(sameCard), false);
+});
+
+test("shouldSelfEvaluate: triggers on instruction-level multi-target even when model outputs few ops (P3)", () => {
+  // 模型只输出 1 个操作，但用户指令明确要求改两个模块 → 应触发
+  const single: SiteOperation[] = [
+    { op: "update_card", section: "features", index: 2, locale: "zh", body: "询价沟通" },
+  ];
+  assert.equal(shouldSelfEvaluate(single, "把第三个优势卡片说明改短，另外公司名改成华辰精工"), true);
+  // 无多目标连接词的单目标指令 → 不触发
+  assert.equal(shouldSelfEvaluate(single, "把首屏标题改短一点"), false);
+});
+
 test("parseSelfEvaluation: parses valid JSON with fences", () => {
   const r = parseSelfEvaluation('```json\n{"ok":false,"issues":[{"severity":"error","code":"scope","message":"改了未要求对象"}]}\n```');
   assert.equal(r.error, "");

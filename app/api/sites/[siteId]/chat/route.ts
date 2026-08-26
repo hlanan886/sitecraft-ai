@@ -4,6 +4,7 @@ import { describeDestructive, isDestructiveOperation } from "@/lib/site-operatio
 import { commitOperations, getSite, snapshot } from "@/lib/site-store";
 import {
   getOrCreateSession,
+  isUnresolvableReferential,
   markRevisionDrift,
   pushAssistantMessage,
   pushUserMessage,
@@ -63,6 +64,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
         sessionContext = serializeSessionContext(session);
       }
 
+      // P2 保护：无历史可依的指代请求（"刚才改的标题"但本会话从没改过）→ 不调模型，直接澄清
+      if (
+        isUnresolvableReferential(parsed.data.message, session, {
+          hasLegacyContext: Boolean(parsed.data.context?.length),
+          hasSelectedTarget: Boolean(parsed.data.selectedTarget),
+        })
+      ) {
+        event(controller, {
+          type: "done",
+          status: "need_clarification",
+          message: "当前会话中没有可定位的上一项修改，请说明要修改哪个标题或字段。",
+          attempts: 0,
+        });
+        controller.close();
+        return;
+      }
+
       event(controller, { type: "status", value: "正在调用模型并生成结构化操作…" });
       const provider = await requestStructuredOperations({
         message: parsed.data.message,
@@ -87,6 +105,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
           destructive: destructiveOps.map(describeDestructive),
           model: provider.model,
           latencyMs: provider.latencyMs,
+          attempts: provider.attemptCount,
         });
         controller.close();
         return;
@@ -95,7 +114,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
       let finalProvider = provider;
       let selfEvaluated = false;
       let evalIssues: string[] = [];
-      if (shouldSelfEvaluate(provider.operations)) {
+      if (shouldSelfEvaluate(provider.operations, parsed.data.message)) {
         selfEvaluated = true;
         event(controller, { type: "status", value: "正在质检本次修改…" });
         const evalRes = await evaluateOperations({
@@ -138,6 +157,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
           destructive: finalDestructive.map(describeDestructive),
           model: finalProvider.model,
           latencyMs: finalProvider.latencyMs,
+          attempts: finalProvider.attemptCount,
         });
         controller.close();
         return;
@@ -155,10 +175,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
         });
         if (committed.status === "conflict") {
           if (session) markRevisionDrift(session);
-          event(controller, { type: "done", status: "conflict", error: "草稿在 AI 处理期间已被更新，本次操作没有覆盖新版本。", ...snapshot(committed.record) });
+          event(controller, { type: "done", status: "conflict", error: "草稿在 AI 处理期间已被更新，本次操作没有覆盖新版本。", ...snapshot(committed.record), attempts: finalProvider.attemptCount });
         } else if (committed.status === "no_change") {
           if (session) pushAssistantMessage(session, finalProvider.summary);
-          event(controller, { type: "done", status: "no_change", summary: finalProvider.summary, rejected: finalProvider.rejected, ...snapshot(committed.record), model: finalProvider.model, latencyMs: finalProvider.latencyMs, selfEvaluated, evalIssues });
+          event(controller, { type: "done", status: "no_change", summary: finalProvider.summary, rejected: finalProvider.rejected, ...snapshot(committed.record), model: finalProvider.model, latencyMs: finalProvider.latencyMs, selfEvaluated, evalIssues, attempts: finalProvider.attemptCount });
         } else {
           if (session) {
             recordAppliedChange(session, {
@@ -169,7 +189,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
             });
             pushAssistantMessage(session, finalProvider.summary);
           }
-          event(controller, { type: "done", status: "applied", summary: finalProvider.summary, rejected: finalProvider.rejected, changeSet: committed.changeSet, ...snapshot(committed.record), model: finalProvider.model, latencyMs: finalProvider.latencyMs, selfEvaluated, evalIssues });
+          event(controller, { type: "done", status: "applied", summary: finalProvider.summary, rejected: finalProvider.rejected, changeSet: committed.changeSet, ...snapshot(committed.record), model: finalProvider.model, latencyMs: finalProvider.latencyMs, selfEvaluated, evalIssues, attempts: finalProvider.attemptCount });
         }
       } catch (error) {
         event(controller, { type: "done", status: "error", code: "operation_error", error: error instanceof Error ? error.message : "操作应用失败" });

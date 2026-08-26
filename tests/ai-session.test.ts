@@ -4,6 +4,7 @@ import { defaultDraft } from "../lib/site-document.ts";
 import {
   _resetForTests,
   getOrCreateSession,
+  isUnresolvableReferential,
   markRevisionDrift,
   MAX_RECENT_MESSAGES,
   pushAssistantMessage,
@@ -136,4 +137,32 @@ test("serializeSessionContext contains facts, changes, dialog and drift hint, wi
   assert.match(block, /用户：只把第二个服务标题/);
   assert.match(block, /版本提示/);
   assert.ok(block.length <= SESSION_BLOCK_CHAR_LIMIT);
+});
+
+test("isUnresolvableReferential: blocks referential request with no session history", () => {
+  _resetForTests();
+  const empty = getOrCreateSession("site-a", "sess-1", { ...BASE, now: 1000 });
+  const res = isUnresolvableReferential("刚才改的标题再改短一点", empty, { hasLegacyContext: false, hasSelectedTarget: false });
+  assert.equal(res, true);
+});
+
+test("isUnresolvableReferential: does not block when session has history", () => {
+  _resetForTests();
+  const s = getOrCreateSession("site-a", "sess-1", { ...BASE, now: 1000 });
+  recordAppliedChange(s, { revision: 4, summary: "x", targets: ["hero.title.zh"], draft: structuredClone(defaultDraft), now: 1000 });
+  const res = isUnresolvableReferential("刚才改的标题再改短一点", s, { hasLegacyContext: false, hasSelectedTarget: false });
+  assert.equal(res, false);
+});
+
+test("isUnresolvableReferential: does not block when legacy context or selected target exists", () => {
+  _resetForTests();
+  const empty = getOrCreateSession("site-a", "sess-1", { ...BASE, now: 1000 });
+  assert.equal(isUnresolvableReferential("刚才改的标题再改短一点", empty, { hasLegacyContext: true, hasSelectedTarget: false }), false);
+  assert.equal(isUnresolvableReferential("刚才改的标题再改短一点", empty, { hasLegacyContext: false, hasSelectedTarget: true }), false);
+});
+
+test("isUnresolvableReferential: non-referential message is never blocked", () => {
+  _resetForTests();
+  const empty = getOrCreateSession("site-a", "sess-1", { ...BASE, now: 1000 });
+  assert.equal(isUnresolvableReferential("把首屏标题改成可靠制造", empty, { hasLegacyContext: false, hasSelectedTarget: false }), false);
 });
