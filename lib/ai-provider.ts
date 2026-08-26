@@ -123,7 +123,7 @@ export async function requestStructuredOperations(args: {
             },
             {
               role: "user",
-              content: `当前修改目标：${args.selectedTarget || "未指定，按指令定位"}\n${args.sessionContext ? `${args.sessionContext}\n\n` : args.context?.length ? `最近对话：\n${args.context.map((m) => `${m.role === "user" ? "用户" : "助手"}：${m.text}`).join("\n")}\n\n` : ""}当前草稿 JSON：${buildDraftIndex(args.draft, args.message)}\n\n用户指令：${args.message}${args.feedback ? `\n\n模型自评反馈：${args.feedback}。请针对反馈修正后重试。` : ""}${attempt ? `\n\n上一次输出未通过 Schema：${retryFeedback}。请只修正格式和非法字段，严格按操作格式重试。` : ""}`,
+              content: `当前修改目标：${args.selectedTarget || "未指定，按指令定位"}\n${args.sessionContext ? `${args.sessionContext}\n\n` : ""}${args.context?.length ? `最近对话：\n${args.context.map((m) => `${m.role === "user" ? "用户" : "助手"}：${m.text}`).join("\n")}\n\n` : ""}当前草稿 JSON：${buildDraftIndex(args.draft, args.message)}\n\n用户指令：${args.message}${args.feedback ? `\n\n模型自评反馈：${args.feedback}。请针对反馈修正后重试。` : ""}${attempt ? `\n\n上一次输出未通过 Schema：${retryFeedback}。请只修正格式和非法字段，严格按操作格式重试。` : ""}`,
             },
           ],
         }),

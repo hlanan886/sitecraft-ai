@@ -158,3 +158,28 @@ test("detects destructive operations that need confirmation", () => {
   const removeService: SiteOperation = { op: "remove_card", section: "services", itemId: "delivery" };
   assert.equal(describeDestructive(removeService), "删除服务卡片「delivery」");
 });
+
+test("rejects hero subtitle exceeding 40 Chinese chars (Q2)", () => {
+  const longSubtitle = "可靠制造，从关键部件到整线交付，覆盖精密模块、复合材料与智能检测单元，提供全面质量保障和稳定交付服务，满足不同客户的多样化需求，欢迎咨询合作洽谈业务往来沟通联系。";
+  const validated = validateAIOperations("把首屏优化一下", [
+    { op: "set_text", target: "hero.subtitle", locale: "zh", value: longSubtitle },
+  ], templateIds);
+  assert.equal(validated.operations.length, 0);
+  assert.match(validated.rejected[0], /超出长度限制/);
+});
+
+test("accepts hero subtitle within 40 Chinese chars (Q2)", () => {
+  const okSubtitle = "覆盖关键部件与智能检测，支持复杂制造稳定交付。";
+  const validated = validateAIOperations("把首屏优化一下", [
+    { op: "set_text", target: "hero.subtitle", locale: "zh", value: okSubtitle },
+  ], templateIds);
+  assert.equal(validated.operations.length, 1);
+  assert.equal(validated.rejected.length, 0);
+});
+
+test("accepts non-length-limited targets regardless of length (Q2)", () => {
+  const validated = validateAIOperations("改公司简介", [
+    { op: "set_text", target: "contact.email", locale: "zh", value: "a-very-long-email-but-no-limit@example.com" },
+  ], templateIds);
+  assert.equal(validated.operations.length, 1);
+});
