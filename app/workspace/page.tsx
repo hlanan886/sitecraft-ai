@@ -219,11 +219,17 @@ export default function WorkspacePage() {
     setBusy(true);
     setBusyText("正在连接模型…");
     setMessages((items) => [...items, { id: crypto.randomUUID(), role: "user", text: value }]);
+    // 多轮记忆：透传最近 3 轮真实对话（排除初始欢迎语），供服务端拼入 prompt
+    const recentContext = messages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .filter((m) => m.id !== "welcome" && m.id !== "guide")
+      .slice(-6)
+      .map((m) => ({ role: m.role, text: m.text.slice(0, 200) }));
     try {
       const response = await fetch(`/api/sites/${siteId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ baseRevision: draft.revision, message: value, selectedTarget: selectedTarget?.key ?? null }),
+        body: JSON.stringify({ baseRevision: draft.revision, message: value, selectedTarget: selectedTarget?.key ?? null, context: recentContext }),
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({})) as Partial<DraftSnapshot> & { message?: string };

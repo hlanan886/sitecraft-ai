@@ -8,6 +8,11 @@ const chatSchema = z.object({
   baseRevision: z.number().int().nonnegative(),
   message: z.string().trim().min(1).max(4000),
   selectedTarget: z.string().max(120).nullable().optional(),
+  /** 最近对话上下文（多轮记忆）：[{role, text}]，最多 6 条，每条截断 */
+  context: z.array(z.object({
+    role: z.enum(["user", "assistant"]),
+    text: z.string().max(500),
+  })).max(6).optional(),
 });
 
 function event(controller: ReadableStreamDefaultController<Uint8Array>, value: unknown) {
@@ -31,6 +36,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
         draft: current.draft,
         templateId: current.draft.templateId,
         selectedTarget: parsed.data.selectedTarget,
+        context: parsed.data.context,
       });
       if (!provider.ok) {
         event(controller, { type: "done", status: "error", error: provider.error, code: provider.code, latencyMs: provider.latencyMs });

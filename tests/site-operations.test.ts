@@ -49,6 +49,23 @@ test("allows a whitelisted template switch only when explicitly requested", () =
   assert.equal(validated.operations[0].op, "set_template");
 });
 
+test("allows a template switch in '模板换成' word order", () => {
+  // 回归：实测中"请把模板换成 atlas"被正则误拒（名词在前语序未匹配）
+  const validated = validateAIOperations("请把模板换成 kindred", [
+    { op: "set_template", templateId: "kindred" },
+  ], templateIds);
+  assert.deepEqual(validated.rejected, []);
+  assert.equal(validated.operations[0].op, "set_template");
+});
+
+test("allows a template switch with English 'switch template' order", () => {
+  const validated = validateAIOperations("switch template to kindred", [
+    { op: "set_template", templateId: "kindred" },
+  ], templateIds);
+  assert.deepEqual(validated.rejected, []);
+  assert.equal(validated.operations[0].op, "set_template");
+});
+
 test("does not increment revision for a no-op", () => {
   const operation: SiteOperation = {
     op: "set_text",

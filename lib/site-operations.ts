@@ -341,7 +341,12 @@ export function validateAIOperations(
   templateIds: Set<string>,
 ): { operations: SiteOperation[]; rejected: string[] } {
   const rejected: string[] = [];
-  const explicitTemplateSwitch = /(?:换|切换|改用|使用|选择|更换).{0,10}(?:模板|版式)|(?:template).{0,20}(?:switch|change|use)/i.test(message);
+  // 匹配两类语序：(1) "换/切换/改用...模板"（动词在前）(2) "模板换成/换成模板/模板切换"（名词在前）
+  const explicitTemplateSwitch =
+    /(?:换|切换|改用|使用|选择|更换).{0,10}(?:模板|版式)/i.test(message) ||
+    /(?:模板|版式).{0,10}(?:换|切换|改用|更换)/i.test(message) ||
+    /(?:template).{0,20}(?:switch|change|use)/i.test(message) ||
+    /(?:switch|change|use).{0,20}(?:template)/i.test(message);
   const accepted = operations.filter((operation) => {
     if (operation.op !== "set_template") return true;
     if (!explicitTemplateSwitch) {
