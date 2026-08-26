@@ -6,9 +6,9 @@
 
 | 任务 | 状态 | 负责人 | 完成条件 | 证据 ID | 最后更新 |
 |---|---|---|---|---|---|
-| AI 对话改造（R1-R3 + G1/G2/G4 + D1/D2 + session/自评） | 已完成 | ZhuanZ | 40/40 测试 + typecheck + build + three-sites 零回归 + 真机 4 轮记忆 | E-20260826 | 2026-08-26 |
+| AI 对话改造（R1-R3 + G1/G2/G4 + D1/D2 + session/自评 + P/Q 系列） | 已完成 | ZhuanZ | Codex 第 4 轮验收零 FAIL | E-20260826-r4 | 2026-08-26 |
 | Codex 第 3 轮验收 | 已完成 | Codex | P1/P2/P3 过，Q1/Q2 已修 | E-20260826-q2 | 2026-08-26 |
-| Codex 第 4 轮复验 | 待启动 | Codex | 复验 Q1/Q2 修复 | 待补充 | 2026-08-26 |
+| Codex 第 4 轮验收 | 已完成 | Codex | Q1/Q2 过，零 FAIL 无阻塞 | E-20260826-r4 | 2026-08-26 |
 | agentops 审查 H2/H3 | 已完成 | ZhuanZ | done 透传 selfEvaluated/evalIssues + 重生成失败日志 | E-20260826-h2 | 2026-08-26 |
 
 ## 阻塞项
