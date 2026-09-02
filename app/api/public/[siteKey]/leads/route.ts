@@ -1,33 +1,47 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { isLeadStoreEnabled, normalizeLeadPayload, postgresLeadStore } from "@/lib/lead-store";
 
-const leadSchema = z.object({
-  name: z.string().min(1).max(80),
-  email: z.string().email().max(160),
-  company: z.string().max(120).optional(),
-  message: z.string().min(1).max(4000),
-  honeypot: z.string().max(0).optional(),
-});
+export const runtime = "nodejs";
+
+const siteKeyPattern = /^[a-z0-9][a-z0-9_-]{0,79}$/i;
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ siteKey: string }> },
 ) {
   const { siteKey } = await params;
-  const parsed = leadSchema.safeParse(await request.json());
-  if (!parsed.success)
+  if (!siteKeyPattern.test(siteKey)) {
+    return NextResponse.json({ ok: false, error: "invalid_site_key" }, { status: 400 });
+  }
+  const parsed = normalizeLeadPayload(await request.json().catch(() => null));
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid lead payload" },
+      { ok: false, error: "invalid_payload", details: parsed.error.flatten() },
       { status: 400 },
     );
-  if (parsed.data.honeypot) return NextResponse.json({ status: "accepted" });
-  return NextResponse.json(
-    {
-      id: crypto.randomUUID(),
-      siteKey,
-      status: "new",
-      receivedAt: new Date().toISOString(),
-    },
-    { status: 201 },
-  );
+  }
+  if (parsed.data.honeypot) {
+    return NextResponse.json({ ok: true, status: "accepted" }, { status: 202, headers: { "Cache-Control": "no-store" } });
+  }
+  if (!isLeadStoreEnabled()) {
+    return NextResponse.json({ ok: false, error: "lead_store_unavailable" }, { status: 503 });
+  }
+  try {
+    const result = await postgresLeadStore.create({ ...parsed.data, siteKey, source: "published" });
+    return NextResponse.json(
+      {
+        ok: true,
+        lead: {
+          id: result.lead.id,
+          siteKey: result.lead.siteKey,
+          status: result.lead.status,
+          createdAt: result.lead.createdAt,
+        },
+      },
+      { status: result.created ? 201 : 200, headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (error) {
+    console.error("public lead submission failed:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ ok: false, error: "lead_store_unavailable" }, { status: 503 });
+  }
 }

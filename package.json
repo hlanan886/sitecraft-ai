@@ -8,6 +8,11 @@
     "start": "next start",
     "migrate:drafts": "node --experimental-strip-types scripts/migrate-file-drafts.ts",
     "test:three-sites": "node scripts/generate-three-ai-sites.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:real": "node e2e/scripts/run-real.mjs",
+    "e2e:install": "playwright install chromium",
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types tests/*.test.ts"
   },
@@ -22,6 +27,7 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^22.15.0",
     "@types/papaparse": "^5.3.16",
     "@types/pg": "^8.23.1",

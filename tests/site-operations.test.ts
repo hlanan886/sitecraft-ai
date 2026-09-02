@@ -3,7 +3,10 @@ import test from "node:test";
 import { defaultDraft } from "../lib/site-document.ts";
 import {
   applySiteOperations,
+  describeDestructive,
+  isDestructiveOperation,
   validateAIOperations,
+  type AIOperation,
   type SiteOperation,
 } from "../lib/site-operations.ts";
 
@@ -49,6 +52,59 @@ test("allows a whitelisted template switch only when explicitly requested", () =
   assert.equal(validated.operations[0].op, "set_template");
 });
 
+test("allows a template switch in '模板换成' word order", () => {
+  // 回归：实测中"请把模板换成 atlas"被正则误拒（名词在前语序未匹配）
+  const validated = validateAIOperations("请把模板换成 kindred", [
+    { op: "set_template", templateId: "kindred" },
+  ], templateIds);
+  assert.deepEqual(validated.rejected, []);
+  assert.equal(validated.operations[0].op, "set_template");
+});
+
+test("allows a template switch with English 'switch template' order", () => {
+  const validated = validateAIOperations("switch template to kindred", [
+    { op: "set_template", templateId: "kindred" },
+  ], templateIds);
+  assert.deepEqual(validated.rejected, []);
+  assert.equal(validated.operations[0].op, "set_template");
+});
+
+test("rejects english operations when user says 别动英文", () => {
+  const ops: AIOperation[] = [
+    { op: "set_text", target: "hero.title", locale: "en", value: "x" },
+    { op: "set_text", target: "hero.title", locale: "zh", value: "y" },
+  ];
+  const validated = validateAIOperations("别动英文，把中文首屏改好", ops, templateIds);
+  assert.equal(validated.operations.length, 1);
+  const [zhOp] = validated.operations;
+  assert.ok(zhOp.op === "set_text");
+  assert.equal(zhOp.locale, "zh");
+  assert.match(validated.rejected[0], /英文/);
+});
+
+test("allows only zh operations when user says 只改中文", () => {
+  const ops: AIOperation[] = [
+    { op: "set_text", target: "hero.title", locale: "en", value: "x" },
+    { op: "set_text", target: "hero.title", locale: "zh", value: "y" },
+  ];
+  const validated = validateAIOperations("只改中文，别动英文", ops, templateIds);
+  assert.equal(validated.operations.length, 1);
+  const [zhOp2] = validated.operations;
+  assert.ok(zhOp2.op === "set_text");
+  assert.equal(zhOp2.locale, "zh");
+});
+
+test("does not over-restrict on bilingual or normal instructions", () => {
+  const ops: AIOperation[] = [
+    { op: "set_text", target: "hero.title", locale: "en", value: "x" },
+    { op: "set_text", target: "hero.title", locale: "zh", value: "y" },
+  ];
+  const both = validateAIOperations("中英文都改一下首屏", ops, templateIds);
+  assert.equal(both.operations.length, 2);
+  const normal = validateAIOperations("把首屏标题改一下", ops, templateIds);
+  assert.equal(normal.operations.length, 2);
+});
+
 test("does not increment revision for a no-op", () => {
   const operation: SiteOperation = {
     op: "set_text",
@@ -60,6 +116,23 @@ test("does not increment revision for a no-op", () => {
   assert.equal(result.changed, false);
   assert.equal(result.draft.revision, defaultDraft.revision);
   assert.deepEqual(result.appliedTargets, []);
+});
+
+test("applies design tokens as one reversible draft change", () => {
+  const tokens = {
+    primary: "#18385f",
+    secondary: "#e7eef7",
+    accent: "#f0bd59",
+    fontStyle: "technical" as const,
+    radius: "sharp" as const,
+    density: "compact" as const,
+  };
+  const result = applySiteOperations(defaultDraft, [{ op: "set_design_tokens", tokens }], { templateIds, lastChange: "Design variant" });
+  assert.equal(result.changed, true);
+  assert.deepEqual(result.draft.designTokens, tokens);
+  assert.deepEqual(result.appliedTargets, ["design.tokens"]);
+  const restored = applySiteOperations(result.draft, result.inverseOperations, { templateIds, lastChange: "Undo" });
+  assert.equal(restored.draft.designTokens, null);
 });
 
 test("replaces imported products as one reversible draft change", () => {
@@ -76,4 +149,54 @@ test("replaces imported products as one reversible draft change", () => {
   assert.equal(result.draft.products[0].sku, "NEW-001");
   const restored = applySiteOperations(result.draft, result.inverseOperations, { templateIds, lastChange: "Undo" });
   assert.deepEqual(restored.draft.products, defaultDraft.products);
+});
+
+test("detects destructive operations that need confirmation", () => {
+  const removeCard: SiteOperation = { op: "remove_card", section: "features", itemId: "quality" };
+  const hideSection: SiteOperation = { op: "set_section_visibility", section: "about", visible: false };
+  const showSection: SiteOperation = { op: "set_section_visibility", section: "about", visible: true };
+  const switchTemplate: SiteOperation = { op: "set_template", templateId: "kindred" };
+  const reorder: SiteOperation = { op: "reorder_sections", order: ["about", "features", "services", "products", "contact"] };
+  const editText: SiteOperation = { op: "set_text", target: "hero.title", locale: "zh", value: "x" };
+
+  assert.equal(isDestructiveOperation(removeCard), true);
+  assert.equal(isDestructiveOperation(hideSection), true);
+  assert.equal(isDestructiveOperation(showSection), false); // 显示区块不破坏
+  assert.equal(isDestructiveOperation(switchTemplate), true);
+  assert.equal(isDestructiveOperation(reorder), true);
+  assert.equal(isDestructiveOperation(editText), false);
+
+  assert.match(describeDestructive(removeCard), /删除/);
+  assert.match(describeDestructive(hideSection), /隐藏/);
+  assert.match(describeDestructive(switchTemplate), /切换模板/);
+
+  // 精确字符串断言：删除和卡片之间不得有多余空格（Codex 验收反馈 D1）
+  assert.equal(describeDestructive(removeCard), "删除核心优势卡片「quality」");
+  const removeService: SiteOperation = { op: "remove_card", section: "services", itemId: "delivery" };
+  assert.equal(describeDestructive(removeService), "删除服务卡片「delivery」");
+});
+
+test("rejects hero subtitle exceeding 40 Chinese chars (Q2)", () => {
+  const longSubtitle = "可靠制造，从关键部件到整线交付，覆盖精密模块、复合材料与智能检测单元，提供全面质量保障和稳定交付服务，满足不同客户的多样化需求，欢迎咨询合作洽谈业务往来沟通联系。";
+  const validated = validateAIOperations("把首屏优化一下", [
+    { op: "set_text", target: "hero.subtitle", locale: "zh", value: longSubtitle },
+  ], templateIds);
+  assert.equal(validated.operations.length, 0);
+  assert.match(validated.rejected[0], /超出长度限制/);
+});
+
+test("accepts hero subtitle within 40 Chinese chars (Q2)", () => {
+  const okSubtitle = "覆盖关键部件与智能检测，支持复杂制造稳定交付。";
+  const validated = validateAIOperations("把首屏优化一下", [
+    { op: "set_text", target: "hero.subtitle", locale: "zh", value: okSubtitle },
+  ], templateIds);
+  assert.equal(validated.operations.length, 1);
+  assert.equal(validated.rejected.length, 0);
+});
+
+test("accepts non-length-limited targets regardless of length (Q2)", () => {
+  const validated = validateAIOperations("改公司简介", [
+    { op: "set_text", target: "contact.email", locale: "zh", value: "a-very-long-email-but-no-limit@example.com" },
+  ], templateIds);
+  assert.equal(validated.operations.length, 1);
 });

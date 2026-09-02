@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, Globe2, Mail, ShieldCheck, Users } from "lucide-react";
 import { AppSidebar } from "@/components/app-sidebar";
+import { GenerationHealthPanel } from "@/components/generation-health-panel";
 
 export default function SettingsPage() {
   return (
@@ -23,6 +24,7 @@ export default function SettingsPage() {
               <p>管理品牌、通知、成员和发布默认值。</p>
             </div>
           </div>
+          <GenerationHealthPanel />
           <div className="settings-grid">
             <section className="settings-section" id="profile">
               <div className="settings-icon"><Globe2 size={17} /></div>
@@ -36,9 +38,9 @@ export default function SettingsPage() {
               <div className="settings-icon"><Mail size={17} /></div>
               <div>
                 <h2>询盘通知</h2>
-                <p>新询盘发送至 lydia@sitecraft.ai</p>
+                <p>新询盘会保存到线索工作台；邮件通知尚未配置。</p>
               </div>
-              <button className="secondary-button">配置</button>
+              <Link className="secondary-button" href="/leads">查看线索</Link>
             </section>
             <section className="settings-section" id="team">
               <div className="settings-icon"><Users size={17} /></div>

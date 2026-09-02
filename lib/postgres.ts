@@ -28,8 +28,8 @@ export function getDatabasePool() {
 
 export async function ensureDatabaseSchema() {
   if (!globalDatabase.__sitecraftSchemaReady) {
-    globalDatabase.__sitecraftSchemaReady = getDatabasePool()
-      .query(`
+    globalDatabase.__sitecraftSchemaReady = (async () => {
+      await getDatabasePool().query(`
         CREATE TABLE IF NOT EXISTS sitecraft_sites (
           workspace_id TEXT NOT NULL,
           site_id TEXT NOT NULL,
@@ -39,9 +39,28 @@ export async function ensureDatabaseSchema() {
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           PRIMARY KEY (workspace_id, site_id)
         )
-      `)
-      .then(() => undefined)
-      .catch((error) => {
+      `);
+      await getDatabasePool().query(`
+        CREATE TABLE IF NOT EXISTS sitecraft_leads (
+          id UUID PRIMARY KEY,
+          site_key TEXT NOT NULL,
+          name TEXT NOT NULL,
+          email TEXT NOT NULL,
+          company TEXT NOT NULL DEFAULT '',
+          message TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'contacted', 'archived')),
+          source TEXT NOT NULL DEFAULT 'published',
+          idempotency_key TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          UNIQUE (site_key, idempotency_key)
+        );
+        CREATE INDEX IF NOT EXISTS sitecraft_leads_site_created_idx
+          ON sitecraft_leads (site_key, created_at DESC);
+        CREATE INDEX IF NOT EXISTS sitecraft_leads_site_status_idx
+          ON sitecraft_leads (site_key, status, created_at DESC);
+      `);
+    })().catch((error) => {
         globalDatabase.__sitecraftSchemaReady = undefined;
         throw error;
       });

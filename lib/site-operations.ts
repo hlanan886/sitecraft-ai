@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   cloneDraft,
+  designTokensSchema,
   editableCardSchema,
   locales,
   productSchema,
@@ -80,6 +81,10 @@ const setTemplateOperationSchema = z.object({
   op: z.literal("set_template"),
   templateId: z.string().min(1).max(80),
 });
+const setDesignTokensOperationSchema = z.object({
+  op: z.literal("set_design_tokens"),
+  tokens: designTokensSchema.nullable(),
+});
 const setSectionVisibilityOperationSchema = z.object({
   op: z.literal("set_section_visibility"),
   section: sectionKeySchema,
@@ -116,6 +121,7 @@ export const siteOperationSchema = z.discriminatedUnion("op", [
   removeCardOperationSchema,
   updateProductOperationSchema,
   setTemplateOperationSchema,
+  setDesignTokensOperationSchema,
   setSectionVisibilityOperationSchema,
   reorderSectionsOperationSchema,
   replaceProductsOperationSchema,
@@ -303,6 +309,13 @@ export function applySiteOperations(
       appliedTargets.push("template");
       continue;
     }
+    if (operation.op === "set_design_tokens") {
+      if (same(draft.designTokens, operation.tokens)) continue;
+      inverseOperations.unshift({ op: "set_design_tokens", tokens: structuredClone(draft.designTokens) });
+      draft.designTokens = structuredClone(operation.tokens);
+      appliedTargets.push("design.tokens");
+      continue;
+    }
     if (operation.op === "set_section_visibility") {
       const wasVisible = !draft.hiddenSections.includes(operation.section);
       if (wasVisible === operation.visible) continue;
@@ -341,20 +354,162 @@ export function validateAIOperations(
   templateIds: Set<string>,
 ): { operations: SiteOperation[]; rejected: string[] } {
   const rejected: string[] = [];
-  const explicitTemplateSwitch = /(?:换|切换|改用|使用|选择|更换).{0,10}(?:模板|版式)|(?:template).{0,20}(?:switch|change|use)/i.test(message);
+  // 匹配两类语序：(1) "换/切换/改用...模板"（动词在前）(2) "模板换成/换成模板/模板切换"（名词在前）
+  const explicitTemplateSwitch =
+    /(?:换|切换|改用|使用|选择|更换).{0,10}(?:模板|版式)/i.test(message) ||
+    /(?:模板|版式).{0,10}(?:换|切换|改用|更换)/i.test(message) ||
+    /(?:template).{0,20}(?:switch|change|use)/i.test(message) ||
+    /(?:switch|change|use).{0,20}(?:template)/i.test(message);
+
+  // 语言约束 conformance：识别用户对语言范围的明确限定
+  // 两类：(1) 负面限定 forbid——"别动英文/不要改中文/不动英文" 拒绝该语言 op
+  //       (2) 正面限定 allow——"只改中文/仅英文" 只允许该语言 op
+  // 仅当出现明确限定词才生效，避免误伤普通指令
+  const localeGuard = parseLocaleGuard(message);
+
   const accepted = operations.filter((operation) => {
-    if (operation.op !== "set_template") return true;
-    if (!explicitTemplateSwitch) {
-      rejected.push("用户没有明确要求更换模板，已拒绝模板切换");
-      return false;
+    if (operation.op === "set_template") {
+      if (!explicitTemplateSwitch) {
+        rejected.push("用户没有明确要求更换模板，已拒绝模板切换");
+        return false;
+      }
+      if (!templateIds.has(operation.templateId)) {
+        rejected.push(`模板 ${operation.templateId} 不在白名单中`);
+        return false;
+      }
+      return true;
     }
-    if (!templateIds.has(operation.templateId)) {
-      rejected.push(`模板 ${operation.templateId} 不在白名单中`);
-      return false;
+    // 语言越界校验
+    const opLocale = "locale" in operation && operation.locale ? operation.locale : null;
+    if (opLocale && localeGuard) {
+      if (localeGuard.forbid === opLocale) {
+        rejected.push(`用户明确不要改动${opLocale === "zh" ? "中文" : "英文"}，已拒绝 ${operation.op} 对${opLocale === "zh" ? "中文" : "英文"}的修改`);
+        return false;
+      }
+      if (localeGuard.allow && localeGuard.allow !== opLocale) {
+        rejected.push(`用户限定只修改${localeGuard.allow === "zh" ? "中文" : "英文"}，已拒绝 ${operation.op} 对${opLocale === "zh" ? "中文" : "英文"}的修改`);
+        return false;
+      }
+    }
+    // 文案长度确定性校验（Q2，Codex 反馈）：标题/副标题超限则拒绝，不依赖 system prompt
+    if (operation.op === "set_text" && operation.value) {
+      const limit = copyLengthLimit(operation.target, operation.locale ?? "zh");
+      if (limit && exceedsLimit(operation.value, operation.locale ?? "zh", limit)) {
+        rejected.push(`文案超出长度限制：${operation.target} ${operation.locale ?? "zh"} 应为 ${limit}${operation.locale === "en" ? " 词" : " 字"}以内（当前 ${measureCopy(operation.value, operation.locale ?? "zh")}）`);
+        return false;
+      }
     }
     return true;
   });
   return { operations: accepted, rejected };
+}
+
+/**
+ * 生成场景专用校验（一句话建站初稿）。
+ * 与 validateAIOperations 不同：生成是主动建站，set_template 只查白名单（不要求"明确换模板"）；
+ * 不做 locale guard（生成 prompt 明确 zh+en）；保留白名单 + 文案长度校验。
+ */
+export function validateGenerationOperations(
+  operations: SiteOperation[],
+  templateIds: Set<string>,
+): { operations: SiteOperation[]; rejected: string[] } {
+  const rejected: string[] = [];
+  const accepted = operations.filter((operation) => {
+    if (operation.op === "set_template") {
+      if (!templateIds.has(operation.templateId)) {
+        rejected.push(`模板 ${operation.templateId} 不在白名单中`);
+        return false;
+      }
+      return true;
+    }
+    // 文案长度确定性校验（Q2）：标题/副标题超限则拒绝
+    if (operation.op === "set_text" && operation.value) {
+      const limit = copyLengthLimit(operation.target, operation.locale ?? "zh");
+      if (limit && exceedsLimit(operation.value, operation.locale ?? "zh", limit)) {
+        rejected.push(`文案超出长度限制：${operation.target} ${operation.locale ?? "zh"} 应为 ${limit}${operation.locale === "en" ? " 词" : " 字"}以内（当前 ${measureCopy(operation.value, operation.locale ?? "zh")}）`);
+        return false;
+      }
+    }
+    return true;
+  });
+  return { operations: accepted, rejected };
+}
+
+/** 各文案目标的语言长度限制（Q2）：title ≤15字/10词，subtitle ≤40字/25词 */
+function copyLengthLimit(target: string, locale: string): number | null {
+  if (target === "hero.title" || target === "about.title" || target === "hero.cta") {
+    return locale === "en" ? 10 : 15;
+  }
+  if (target === "hero.subtitle" || target === "about.body") {
+    return locale === "en" ? 25 : 40;
+  }
+  return null;
+}
+
+function measureCopy(text: string, locale: string): number {
+  return locale === "en" ? text.trim().split(/\s+/).filter(Boolean).length : [...text].length;
+}
+
+function exceedsLimit(text: string, locale: string, limit: number): boolean {
+  return measureCopy(text, locale) > limit;
+}
+
+type LocaleGuard = { forbid?: "zh" | "en"; allow?: "zh" | "en" };
+
+/**
+ * 解析用户指令中的语言范围限定。
+ * 返回 LocaleGuard（forbid/allow 可能并存，如"只改中文，别动英文"）。
+ * 返回 null 表示未限定。
+ * 注意"中英双语/中英文"整体限定不算单语限定。
+ */
+function parseLocaleGuard(message: string): LocaleGuard | null {
+  // 排除"中英"连用（双语不算单语限定）
+  if (/中英|中英文|中英双语|中英两种|中英文都/i.test(message)) return null;
+  const guard: LocaleGuard = {};
+  // 负面限定：别/不要/不用/不动/别动/勿 + 语言词（中文限 2 字符距离，避免"别动英文，把中文"误判）
+  const negEn = /(?:别|不要|不用|不动|别动|勿).{0,4}(?:英文|英语)/i.test(message);
+  const negZh = /(?:别|不要|不用|不动|别动|勿).{0,2}(?:中文|汉语)/i.test(message);
+  if (negEn && !negZh) guard.forbid = "en";
+  else if (negZh && !negEn) guard.forbid = "zh";
+  // 正面限定：只/仅/只管/就/只改/保持/维持 + 语言词（英文距离放宽到 6，支持 "only change english"）
+  const posEn = /(?:只|仅|只管|就|只改|保持|维持).{0,2}(?:英文|英语)|(?:only|just|keep|change).{0,10}english/i.test(message);
+  const posZh = /(?:只|仅|只管|就|只改|保持|维持).{0,2}(?:中文|汉语)/i.test(message);
+  if (posEn && !posZh) guard.allow = "en";
+  else if (posZh && !posEn) guard.allow = "zh";
+  return guard.forbid || guard.allow ? guard : null;
+}
+
+/**
+ * 判定某操作是否属于"破坏性操作"（删除/隐藏/换模板/重排），
+ * 这类操作应在提交前让用户确认，避免误删误改。
+ */
+export function isDestructiveOperation(operation: SiteOperation): boolean {
+  switch (operation.op) {
+    case "remove_card":
+    case "set_template":
+    case "reorder_sections":
+      return true;
+    case "set_section_visibility":
+      return operation.visible === false;
+    default:
+      return false;
+  }
+}
+
+/** 破坏性操作的简短描述，用于确认提示 */
+export function describeDestructive(operation: SiteOperation): string {
+  switch (operation.op) {
+    case "remove_card":
+      return `删除${operation.section === "features" ? "核心优势" : "服务"}卡片「${operation.itemId}」`;
+    case "set_section_visibility":
+      return `隐藏「${operation.section}」区块`;
+    case "set_template":
+      return `切换模板到 ${operation.templateId}`;
+    case "reorder_sections":
+      return "调整区块显示顺序";
+    default:
+      return operation.op;
+  }
 }
 
 export function describeTarget(target: string) {

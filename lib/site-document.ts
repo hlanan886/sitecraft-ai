@@ -38,6 +38,16 @@ export const sectionKeys = [
 export const sectionKeySchema = z.enum(sectionKeys);
 export type SectionKey = z.infer<typeof sectionKeySchema>;
 
+export const designTokensSchema = z.object({
+  primary: z.string().regex(/^#[0-9a-f]{6}$/i),
+  secondary: z.string().regex(/^#[0-9a-f]{6}$/i),
+  accent: z.string().regex(/^#[0-9a-f]{6}$/i),
+  fontStyle: z.enum(["sans", "editorial", "technical"]),
+  radius: z.enum(["sharp", "soft", "rounded"]),
+  density: z.enum(["compact", "balanced", "spacious"]),
+});
+export type DesignTokens = z.infer<typeof designTokensSchema>;
+
 const contentSectionSchema = z.object({
   title: localizedTextSchema,
   intro: localizedTextSchema,
@@ -87,6 +97,7 @@ export const siteDraftSchema = z.object({
   }),
   sectionOrder: z.array(sectionKeySchema).length(sectionKeys.length),
   hiddenSections: z.array(sectionKeySchema),
+  designTokens: designTokensSchema.nullable().default(null),
   products: z.array(productSchema).max(1000),
   supportConfig: z.object({
     enabled: z.boolean(),
@@ -196,6 +207,7 @@ export const defaultDraft: SiteDraft = {
   },
   sectionOrder: ["about", "features", "services", "products", "contact"],
   hiddenSections: [],
+  designTokens: null,
   products: starterProducts,
   supportConfig: { enabled: false, knowledgeSourceIds: [] },
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   ArrowLeft,
@@ -13,10 +14,12 @@ import {
   Globe2,
   History,
   Image as ImageIcon,
+  Info,
   Laptop as Desktop,
   LoaderCircle,
   MessageSquareText,
   MoreHorizontal,
+  RefreshCw,
   RotateCcw,
   RotateCw,
   Send,
@@ -26,10 +29,11 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { type ChangeEvent, type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Papa from "papaparse";
 import readXlsxFile from "read-excel-file";
 import { OpenSourceTemplateFrame } from "@/components/open-source-template-frame";
+import { SiteRenderer } from "@/components/site-renderer";
 import {
   defaultDraft,
   getTemplate,
@@ -41,8 +45,7 @@ import {
   type SiteDraft,
 } from "@/lib/site-model";
 import type { SiteOperation } from "@/lib/site-operations";
-
-const siteId = "demo";
+import { buildLocalPreviewSlots } from "@/lib/template-slot-guard";
 
 type ChatStatus = "syncing" | "applied" | "warning" | "error" | "no_change";
 type ChatMessage = {
@@ -71,6 +74,7 @@ type DraftSnapshot = {
   isNew?: boolean;
 };
 type ProviderStatus = { mode: "deepseek" | "unconfigured"; model: string | null };
+type TemplateCapabilities = { templateId: string; revision: number; slots: string[] };
 
 const initialMessages: ChatMessage[] = [
   {
@@ -94,6 +98,9 @@ function readSseEvents(raw: string) {
 }
 
 export default function WorkspacePage() {
+  const router = useRouter();
+  // SSR 安全：首帧 "demo"，客户端挂载后从 ?siteId 读取真实站点
+  const [siteId, setSiteId] = useState("demo");
   const [draft, setDraft] = useState<SiteDraft>(defaultDraft);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [canUndo, setCanUndo] = useState(false);
@@ -101,18 +108,49 @@ export default function WorkspacePage() {
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
+  const [pendingDestructive, setPendingDestructive] = useState<{
+    message: string;
+    summary: string;
+    destructive: string[];
+    selectedTarget: { key: string; label: string } | null;
+  } | null>(null);
+  // 服务端会话 id：sessionStorage 持久化，每标签页独立（③ session 摘要）
+  // SSR 安全：首帧为空串，客户端挂载后生成（避免 window is not defined）
+  const [sessionId, setSessionId] = useState("");
+  useEffect(() => {
+    const existing = window.sessionStorage.getItem("sitecraft-session");
+    if (existing) {
+      setSessionId(existing);
+    } else {
+      const fresh = crypto.randomUUID();
+      window.sessionStorage.setItem("sitecraft-session", fresh);
+      setSessionId(fresh);
+    }
+  }, []);
   const [device, setDevice] = useState<Device>("desktop");
   const [locale, setLocale] = useState<Locale>("zh");
   const [showImport, setShowImport] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  // C 块局部重生成：方向输入弹窗（点选板块后触发）
+  const [regenerateDialog, setRegenerateDialog] = useState<{ section: string; label: string } | null>(null);
+  const [regenerateDirection, setRegenerateDirection] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [importState, setImportState] = useState<{ name: string; imported: number; errors: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [busyText, setBusyText] = useState("正在连接模型…");
+  // P0-1：对话总超时（120s）与取消——服务端单条最多 2×45s 生成 + 30s 自评 + 2×45s 重生成，
+  // 前端必须兜底，否则领导会看到无限转圈。
+  const chatAbortRef = useRef<AbortController | null>(null);
+  const CHAT_TIMEOUT_MS = 120_000;
+  // P2 完成引导：从一句话建站生成完成跳转带 ?generated=1 → 显示"下一步"提示条
+  const [showGuide, setShowGuide] = useState(false);
   const [mobilePane, setMobilePane] = useState<"chat" | "preview">("chat");
   const [selectedTarget, setSelectedTarget] = useState<{ key: string; label: string } | null>(null);
   const [draftReady, setDraftReady] = useState(false);
   const [expectedTargets, setExpectedTargets] = useState<string[]>([]);
-  const [previewState, setPreviewState] = useState<"loading" | "synced" | "warning">("loading");
+  const [templateCapabilities, setTemplateCapabilities] = useState<TemplateCapabilities | null>(null);
+  const [previewState, setPreviewState] = useState<"loading" | "synced" | "warning" | "fallback">("loading");
+  const [previewFallback, setPreviewFallback] = useState(false);
   const [providerStatus, setProviderStatus] = useState<ProviderStatus>({ mode: "unconfigured", model: null });
   const fileRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -125,6 +163,14 @@ export default function WorkspacePage() {
     setCanRedo(Boolean(snapshot.canRedo));
     setUpdatedAt(snapshot.updatedAt ?? new Date().toISOString());
   };
+
+  useEffect(() => {
+    // 从 URL 读取站点 id（一句话建站后跳转用），默认 demo 保持向后兼容
+    const fromUrl = new URLSearchParams(window.location.search).get("siteId");
+    if (fromUrl && fromUrl !== siteId) setSiteId(fromUrl);
+    // P2 完成引导：?generated=1 → 显示"下一步"提示条（非阻断，可关）
+    if (new URLSearchParams(window.location.search).get("generated") === "1") setShowGuide(true);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -184,7 +230,7 @@ export default function WorkspacePage() {
     }
     void loadDraft();
     return () => { cancelled = true; };
-  }, []);
+  }, [siteId]);
 
   useEffect(() => {
     fetch("/api/ai/status", { cache: "no-store" })
@@ -197,34 +243,124 @@ export default function WorkspacePage() {
   }, [messages, busy]);
 
   const currentTemplate = getTemplate(draft.templateId);
+  const activeTemplateCapabilities = templateCapabilities?.templateId === draft.templateId
+    && templateCapabilities.revision === draft.revision
+    ? templateCapabilities
+    : null;
   const saveLabel = useMemo(() => {
     if (!draftReady) return "正在读取草稿";
     if (previewState === "loading") return "草稿已保存 · 正在同步预览";
+    if (previewState === "fallback") return "草稿已保存 · 当前为本地近似预览";
     if (previewState === "warning") return "草稿已保存 · 部分槽位未显示";
     return "草稿与预览已同步";
   }, [draftReady, previewState]);
 
-  const selectPreviewTarget = (key: string, label: string, prompt: string) => {
-    setSelectedTarget({ key, label });
-    setInput(prompt);
+  const selectPreviewTarget = (key: string, label: string, prompt: string, slot?: string) => {
+    setSelectedTarget({ key, label: slot ? `${label}（已定位）` : label });
+    setInput(slot ? `修改我刚才选中的${label}。${prompt}` : prompt);
     setMobilePane("chat");
     window.requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
+  // C 块：selectedTarget key → 板块（hero/features/services/products/about/contact）
+  const sectionFromTarget = (key: string): string => {
+    if (key.startsWith("hero.") || key === "heroTitle" || key === "heroSubtitle" || key === "heroCta") return "hero";
+    const s = key.split(".")[0];
+    return ["about", "features", "services", "products", "contact"].includes(s) ? s : "";
+  };
+
+  // C 块：局部重生成提交（调 generate 的 regenerate step，SSE 展示进度）
+  const submitRegenerate = async (section: string, direction: string) => {
+    if (busy || !draftReady) return;
+    setBusy(true);
+    setBusyText(`正在重生成 ${section} 板块…`);
+    try {
+      const res = await fetch(`/api/sites/${siteId}/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          step: "execute",
+          message: direction.trim() || `重生成 ${section} 板块`,
+          intent: {
+            businessType: "other",
+            companyName: draft.companyName,
+            industry: draft.industry,
+            targetAudience: "globalB2b",
+            tone: "professional",
+            coreSections: ["about", "features", "services", "products", "contact"],
+            recommendedTemplateId: draft.templateId,
+            summary: draft.goal || "重生成板块",
+          },
+          templateId: draft.templateId,
+          siteLanguage: locale,
+          hiddenSections: draft.hiddenSections ?? [],
+          baseRevision: draft.revision,
+          regenerate: { section, direction: direction.trim() || undefined, mode: "text" },
+        }),
+      });
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("无法读取响应");
+      const decoder = new TextDecoder();
+      let raw = "";
+      let done: Record<string, unknown> | undefined;
+      while (true) {
+        const result = await reader.read();
+        raw += decoder.decode(result.value ?? new Uint8Array(), { stream: !result.done });
+        const events = raw.split("\n\n").map((block) => block.split("\n").find((line) => line.startsWith("data: "))?.slice(6)).filter(Boolean).map((v) => JSON.parse(v as string) as Record<string, unknown>);
+        done = events.find((e) => e.type === "done");
+        if (result.done) break;
+      }
+      if (!done) throw new Error("没有返回结果");
+      if (done.status === "error") throw new Error(String(done.error || "重生成失败"));
+      if (done.status === "conflict") throw new Error("草稿冲突，请刷新后重试");
+      // 重生成成功 → 刷新草稿（revision 更新）
+      const fresh = await fetch(`/api/sites/${siteId}/draft`, { cache: "no-store" }).then((r) => r.json());
+      if (fresh.draft) {
+        setDraft(fresh.draft);
+        setDraftReady(true);
+      }
+      setSelectedTarget(null);
+      setRegenerateDialog(null);
+      setRegenerateDirection("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "重生成失败");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const submitChat = async (event?: FormEvent) => {
     event?.preventDefault();
     const value = input.trim();
-    if (!value || busy || !draftReady) return;
+    if (!value || busy || !draftReady || !activeTemplateCapabilities) return;
     setInput("");
     setBusy(true);
     setBusyText("正在连接模型…");
     setMessages((items) => [...items, { id: crypto.randomUUID(), role: "user", text: value }]);
+    // 多轮记忆：透传最近 3 轮真实对话（排除初始欢迎语），供服务端拼入 prompt
+    const recentContext = messages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .filter((m) => m.id !== "welcome" && m.id !== "guide")
+      .slice(-6)
+      .map((m) => ({ role: m.role, text: m.text.slice(0, 200) }));
     try {
-      const response = await fetch(`/api/sites/${siteId}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ baseRevision: draft.revision, message: value, selectedTarget: selectedTarget?.key ?? null }),
-      });
+      const controller = new AbortController();
+      chatAbortRef.current = controller;
+      const timer = window.setTimeout(() => controller.abort(), CHAT_TIMEOUT_MS);
+      try {
+        const response = await fetch(`/api/sites/${siteId}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            baseRevision: draft.revision,
+            message: value,
+            selectedTarget: selectedTarget?.key ?? null,
+            context: recentContext,
+            sessionId,
+            templateCapabilities: activeTemplateCapabilities,
+          }),
+          signal: controller.signal,
+        });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({})) as Partial<DraftSnapshot> & { message?: string };
         if (payload.draft) adoptSnapshot(payload as DraftSnapshot);
@@ -250,23 +386,136 @@ export default function WorkspacePage() {
       const latency = typeof doneEvent.latencyMs === "number" ? `模型 ${Math.max(0.1, doneEvent.latencyMs / 1000).toFixed(1)} 秒` : undefined;
       if (status === "applied") {
         const changeSet = doneEvent.changeSet as { revision: number; appliedTargets: string[] };
-        setExpectedTargets(changeSet.appliedTargets);
-        setPreviewState("loading");
+        const nonVisualTargets = Array.isArray(doneEvent.nonVisualTargets) ? doneEvent.nonVisualTargets as string[] : [];
+        const visibleTargets = changeSet.appliedTargets.filter((target) => !nonVisualTargets.includes(target));
+        setExpectedTargets(visibleTargets);
+        setPreviewState(visibleTargets.length ? "loading" : "synced");
         setMessages((items) => [...items, {
-          id: crypto.randomUUID(), role: "assistant", status: "syncing", revision: changeSet.revision,
-          text: `草稿 v${changeSet.revision} 已保存，正在确认右侧模板已实际更新。`,
+          id: crypto.randomUUID(), role: "assistant", status: visibleTargets.length ? "syncing" : "applied", revision: changeSet.revision,
+          text: visibleTargets.length
+            ? `草稿 v${changeSet.revision} 已保存，正在确认右侧模板已实际更新。`
+            : `草稿 v${changeSet.revision} 已保存。${String(doneEvent.displayNotice ?? "")}`,
           change: String(doneEvent.summary), meta: latency,
         }]);
       } else if (status === "no_change") {
         setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "no_change", text: "模型没有生成可应用的内容差异，草稿和模板均未修改。", change: String(doneEvent.summary || "没有变化"), meta: latency }]);
       } else if (status === "conflict") {
         setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "warning", text: String(doneEvent.error), change: "没有覆盖较新的草稿" }]);
+      } else if (status === "need_confirmation") {
+        // 破坏性操作需要确认：暂存待确认内容，前端弹确认框
+        const destructive = Array.isArray(doneEvent.destructive) ? (doneEvent.destructive as string[]) : [];
+        setPendingDestructive({
+          message: value,
+          summary: String(doneEvent.summary ?? ""),
+          destructive,
+          selectedTarget,
+        });
+        setMessages((items) => [...items, {
+          id: crypto.randomUUID(), role: "assistant", status: "warning",
+          text: "本次修改包含需要确认的操作。",
+          change: destructive.join("、"),
+        }]);
+      } else if (status === "need_clarification") {
+        const preservedDraft = doneEvent.code === "unsupported_template_slot" || doneEvent.code === "selected_target_mismatch";
+        setMessages((items) => [...items, {
+          id: crypto.randomUUID(), role: "assistant", status: "warning",
+          text: String(doneEvent.message || "需要补充更明确的修改目标。"),
+          change: preservedDraft ? "草稿和历史均未修改" : "本次没有修改草稿",
+          meta: latency,
+        }]);
       } else {
         throw new Error(String(doneEvent.error || "模型操作失败"));
       }
-      setSelectedTarget(null);
+      if (status !== "need_confirmation" && doneEvent.code !== "selected_target_mismatch") setSelectedTarget(null);
+      } finally {
+        window.clearTimeout(timer);
+        chatAbortRef.current = null;
+      }
     } catch (error) {
-      setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "error", text: error instanceof Error ? error.message : "AI 修改失败", change: "本次没有修改草稿" }]);
+      const aborted = error instanceof DOMException && error.name === "AbortError";
+      setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "error", text: aborted ? `模型响应超过 ${CHAT_TIMEOUT_MS / 1000} 秒，已停止等待。可换更简单的指令重试。` : error instanceof Error ? error.message : "AI 修改失败", change: "本次没有修改草稿" }]);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmDestructive = async (confirmed: boolean) => {
+    if (!pendingDestructive) return;
+    const { message, summary, selectedTarget: confirmedTarget } = pendingDestructive;
+    setPendingDestructive(null);
+    if (!confirmed) {
+      setSelectedTarget(null);
+      setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "warning", text: "已取消本次修改。", change: summary }]);
+      return;
+    }
+    // 用户确认后带 confirmedDestructive 重发
+    const confirmCtx = messages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .filter((m) => m.id !== "welcome" && m.id !== "guide")
+      .slice(-6)
+      .map((m) => ({ role: m.role, text: m.text.slice(0, 200) }));
+    setInput(message);
+    setBusy(true);
+    setBusyText("正在保存…");
+    try {
+      const response = await fetch(`/api/sites/${siteId}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          baseRevision: draft.revision,
+          message,
+          selectedTarget: confirmedTarget?.key ?? null,
+          context: confirmCtx,
+          confirmedDestructive: true,
+          sessionId,
+          templateCapabilities: activeTemplateCapabilities,
+        }),
+      });
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("模型响应不可读取");
+      const decoder = new TextDecoder();
+      let raw = "";
+      let doneEvent: Record<string, unknown> | undefined;
+      while (true) {
+        const result = await reader.read();
+        raw += decoder.decode(result.value ?? new Uint8Array(), { stream: !result.done });
+        const events = readSseEvents(raw);
+        doneEvent = events.find((item) => item.type === "done");
+        if (result.done) break;
+      }
+      if (!doneEvent) throw new Error("模型没有返回完成事件");
+      const st = String(doneEvent.status);
+      if ((st === "applied" || st === "no_change" || st === "conflict") && doneEvent.draft) adoptSnapshot(doneEvent as unknown as DraftSnapshot);
+      if (st === "applied") {
+        const changeSet = doneEvent.changeSet as { revision: number; appliedTargets: string[] };
+        const nonVisualTargets = Array.isArray(doneEvent.nonVisualTargets) ? doneEvent.nonVisualTargets as string[] : [];
+        const visibleTargets = changeSet.appliedTargets.filter((target) => !nonVisualTargets.includes(target));
+        setExpectedTargets(visibleTargets);
+        setPreviewState(visibleTargets.length ? "loading" : "synced");
+        setMessages((items) => [...items, {
+          id: crypto.randomUUID(), role: "assistant", status: visibleTargets.length ? "syncing" : "applied", revision: changeSet.revision,
+          text: visibleTargets.length
+            ? `草稿 v${changeSet.revision} 已保存，正在确认右侧模板已实际更新。`
+            : `草稿 v${changeSet.revision} 已保存。${String(doneEvent.displayNotice ?? "")}`,
+          change: String(doneEvent.summary),
+        }]);
+      } else if (st === "no_change") {
+        setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "no_change", text: "模型没有生成可应用的内容差异。", change: String(doneEvent.summary || "没有变化") }]);
+      } else if (st === "conflict") {
+        setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "warning", text: String(doneEvent.error), change: "没有覆盖较新的草稿" }]);
+      } else if (st === "need_clarification") {
+        const preservedDraft = doneEvent.code === "unsupported_template_slot" || doneEvent.code === "selected_target_mismatch";
+        setMessages((items) => [...items, {
+          id: crypto.randomUUID(), role: "assistant", status: "warning",
+          text: String(doneEvent.message || "需要补充更明确的修改目标。"),
+          change: preservedDraft ? "草稿和历史均未修改" : "本次没有修改草稿",
+        }]);
+      } else {
+        setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "error", text: String(doneEvent.error || "操作失败"), change: "本次没有修改草稿" }]);
+      }
+      if (doneEvent.code !== "selected_target_mismatch") setSelectedTarget(null);
+    } catch (error) {
+      setMessages((items) => [...items, { id: crypto.randomUUID(), role: "assistant", status: "error", text: error instanceof Error ? error.message : "确认操作失败", change: "本次没有修改草稿" }]);
     } finally {
       setBusy(false);
     }
@@ -274,6 +523,11 @@ export default function WorkspacePage() {
 
   const handlePreviewReport = (report: { revision: number; appliedSlots: string[]; missingSlots: string[] }) => {
     if (report.revision !== draft.revision) return;
+    setTemplateCapabilities({
+      templateId: draft.templateId,
+      revision: report.revision,
+      slots: [...new Set(report.appliedSlots)],
+    });
     const hasExpectedTargets = expectedTargets.length > 0;
     const visibleTargets = expectedTargets.filter((target) => {
       const language = target.match(/\.(zh|en)$/)?.[1];
@@ -300,6 +554,55 @@ export default function WorkspacePage() {
     }));
     setExpectedTargets([]);
   };
+
+  const handlePreviewFrameState = useCallback((state: "loading" | "ready" | "error") => {
+    if (state === "loading") {
+      setPreviewState("loading");
+      return;
+    }
+    if (state === "error") {
+      setPreviewFallback(true);
+      setPreviewState("fallback");
+      setTemplateCapabilities({
+        templateId: draft.templateId,
+        revision: draft.revision,
+        slots: buildLocalPreviewSlots(draft),
+      });
+    }
+  }, [draft]);
+
+  useEffect(() => {
+    setPreviewFallback(false);
+  }, [draft.templateId]);
+
+  useEffect(() => {
+    const usesLocalPreview = previewFallback;
+    if (!draftReady || !usesLocalPreview) return;
+    setTemplateCapabilities({
+      templateId: draft.templateId,
+      revision: draft.revision,
+      slots: buildLocalPreviewSlots(draft),
+    });
+    setPreviewState(previewFallback ? "fallback" : "synced");
+    if (!expectedTargets.length) return;
+
+    const currentLocaleTargets = expectedTargets.filter((target) => {
+      const language = target.match(/\.(zh|en)$/)?.[1];
+      return !language || language === locale || target === "companyName.zh" || target === "industry.zh";
+    });
+    const editedLanguage = expectedTargets.some((target) => target.endsWith(".en")) ? "英文" : "中文";
+    setMessages((items) => items.map((message) => {
+      if (message.revision !== draft.revision || message.status !== "syncing") return message;
+      return {
+        ...message,
+        status: "applied",
+        text: currentLocaleTargets.length
+          ? `草稿 v${draft.revision} 已保存，本地结构预览已更新。`
+          : `草稿 v${draft.revision} 已保存；${editedLanguage}内容已更新，切换语言即可查看。`,
+      };
+    }));
+    setExpectedTargets([]);
+  }, [draft, draftReady, expectedTargets, locale, previewFallback]);
 
   const moveHistory = async (action: "undo" | "redo") => {
     if (busy) return;
@@ -401,9 +704,19 @@ export default function WorkspacePage() {
         </div>
         <div className="chat-input-wrap">
           {selectedTarget && <div className="chat-target"><span>正在修改：{selectedTarget.label}</span><button aria-label="清除修改目标" onClick={() => setSelectedTarget(null)} type="button"><X size={12} /></button></div>}
+          {pendingDestructive && (
+            <div className="destructive-confirm" role="alert">
+              <div className="destructive-confirm-title"><AlertCircle size={13} />确认执行以下操作</div>
+              <ul className="destructive-confirm-list">{pendingDestructive.destructive.map((item) => <li key={item}>{item}</li>)}</ul>
+              <div className="destructive-confirm-actions">
+                <button className="secondary-button" onClick={() => void confirmDestructive(false)} disabled={busy}>取消</button>
+                <button className="primary-button" onClick={() => void confirmDestructive(true)} disabled={busy}>确认执行</button>
+              </div>
+            </div>
+          )}
           <form className="chat-input" onSubmit={submitChat}>
-            <textarea ref={inputRef} value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void submitChat(); } }} placeholder="告诉 AI 你想怎么改..." rows={2} />
-            <button className="send-button" type="submit" disabled={!input.trim() || busy || !draftReady} aria-label="发送"><Send size={14} /></button>
+            <textarea ref={inputRef} value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void submitChat(); } }} placeholder={draftReady && !activeTemplateCapabilities ? "正在识别模板可编辑位置..." : "告诉 AI 你想怎么改..."} rows={2} />
+            <button className="send-button" type="submit" disabled={!input.trim() || busy || !draftReady || !activeTemplateCapabilities} aria-label="发送"><Send size={14} /></button>
           </form>
           <div className="chat-hints"><button className="hint" onClick={() => setInput("只把第二个服务标题改为智能产线集成，其他内容不变")}>修改服务</button><button className="hint" onClick={() => setInput("重写首屏标题和说明，不要更换模板")}>优化首屏</button><button className="hint" onClick={() => setShowImport(true)}>上传商品表格</button></div>
         </div>
@@ -417,10 +730,46 @@ export default function WorkspacePage() {
             <button className="icon-button" onClick={() => void moveHistory("undo")} disabled={!canUndo || busy} aria-label="撤销"><RotateCcw size={14} /></button>
             <button className="icon-button" onClick={() => void moveHistory("redo")} disabled={!canRedo || busy} aria-label="重做"><RotateCw size={14} /></button>
             <button className="secondary-button" onClick={() => setShowImport(true)}><Upload size={14} />商品</button>
-            <Link className="primary-button" href="/published/forge-industrial" target="_blank" rel="noreferrer"><Globe2 size={14} />发布</Link>
+            <Link className="secondary-button" href={`/leads?siteKey=${encodeURIComponent(siteId)}`}><MessageSquareText size={14} />询盘</Link>
+            {selectedTarget && sectionFromTarget(selectedTarget.key) && (
+              <button
+                className="secondary-button"
+                disabled={busy}
+                onClick={() => setRegenerateDialog({ section: sectionFromTarget(selectedTarget.key), label: selectedTarget.label })}
+              >
+                <Sparkles size={14} />重生成此板块
+              </button>
+            )}
+            <button
+              className="secondary-button"
+              disabled={busy || siteId === "demo"}
+              onClick={() => {
+                // 换方向重新生成：回生成页带 ?siteId，复用现有站点（覆盖内容，历史可撤销）
+                if (window.confirm("换方向重新生成会覆盖当前站点内容（可通过历史撤销），继续？")) {
+                  void router.push(`/generate?siteId=${siteId}`);
+                }
+              }}
+            >
+              <RefreshCw size={14} />换方向重新生成
+            </button>
+            <Link className="primary-button" href={`/published/${encodeURIComponent(siteId)}`} target="_blank" rel="noreferrer"><Globe2 size={14} />发布</Link>
           </div>
         </header>
-        <div className="preview-stage"><div className={`browser-frame ${device}`}><div className="browser-bar"><span className="browser-dot" /><span className="browser-dot" /><span className="browser-dot" /><div className="browser-url">forge-industrial.sites.ai</div><CircleHelp size={11} color="#adb8af" /></div>{draftReady && <OpenSourceTemplateFrame templateId={draft.templateId} draft={draft} locale={locale} variant="workspace" expectedTargets={expectedTargets} onSelectTarget={selectPreviewTarget} onApplyReport={handlePreviewReport} />}</div></div>
+        <div className="preview-stage">
+          {previewFallback && <div className="preview-fallback-note" role="status"><Info size={14} />预览已降级为本地结构近似渲染，板块和内容可继续编辑，最终视觉以模板正式版为准。</div>}
+          {showGuide && (
+            <div className="generate-guide-note" role="status">
+              <div className="generate-guide-title"><Sparkles size={14} />初稿已生成，接下来你可以：</div>
+              <div className="generate-guide-actions">
+                <button onClick={() => { setShowGuide(false); }}>继续用对话改内容</button>
+                <button onClick={() => { setShowGuide(false); window.location.href = "/templates"; }}>换个模板</button>
+                <button onClick={() => { setShowGuide(false); window.location.href = `/workspace?siteId=${siteId}&import=products`; }}>导入商品</button>
+              </div>
+              <button className="generate-guide-close" aria-label="关闭提示" onClick={() => setShowGuide(false)}><X size={12} /></button>
+            </div>
+          )}
+          <div className={`browser-frame ${device}`}><div className="browser-bar"><span className="browser-dot" /><span className="browser-dot" /><span className="browser-dot" /><div className="browser-url">forge-industrial.sites.ai</div><CircleHelp size={11} color="#adb8af" /></div>{draftReady && (previewFallback ? <SiteRenderer draft={draft} locale={locale} mode="preview" onSelectTarget={(label, prompt) => selectPreviewTarget(label, label, prompt)} /> : <OpenSourceTemplateFrame templateId={draft.templateId} draft={draft} locale={locale} variant="workspace" expectedTargets={expectedTargets} onSelectTarget={selectPreviewTarget} onApplyReport={handlePreviewReport} onPreviewStateChange={handlePreviewFrameState} />)}</div>
+        </div>
       </main>
       {showImport && (
         <div className="modal-backdrop" onClick={() => setShowImport(false)}><div className="import-modal" onClick={(event) => event.stopPropagation()}>
@@ -430,6 +779,28 @@ export default function WorkspacePage() {
           <div className="import-options"><div><FileSpreadsheet size={15} /><span>支持中英文列名自动识别</span><ChevronRight size={13} style={{ marginLeft: "auto" }} /></div><div><ImageIcon size={15} /><span>相同 SKU 自动更新，新增项进入草稿</span><ChevronRight size={13} style={{ marginLeft: "auto" }} /></div></div>
           {importState && <div className={`import-result ${importState.imported ? "" : "error"}`}>{importState.imported ? <Check size={14} /> : <AlertCircle size={14} />}<div><strong>{importState.name} {importState.imported ? "已保存" : "导入失败"}</strong><span>{importState.imported ? `新增或更新 ${importState.imported} 个商品` : importState.errors[0]}{importState.imported && importState.errors.length ? `，${importState.errors.length} 行需要检查` : ""}</span></div></div>}
           <div className="modal-foot"><span>当前草稿商品：{draft.products.length} / 1000</span><button className="primary-button" onClick={() => setShowImport(false)}>完成</button></div>
+        </div></div>
+      )}
+      {regenerateDialog && (
+        <div className="modal-backdrop" onClick={() => setRegenerateDialog(null)}><div className="import-modal" onClick={(event) => event.stopPropagation()}>
+          <div className="modal-head"><div><div className="eyebrow">Regenerate</div><h3>重生成 {regenerateDialog.label}</h3></div><button className="icon-button" onClick={() => setRegenerateDialog(null)} aria-label="关闭"><X size={15} /></button></div>
+          <p className="modal-copy">只重生成这个板块，其余内容保持不动。可输入想改的方向（留空按当前模板风格重写）。</p>
+          <textarea
+            className="generate-textarea"
+            value={regenerateDirection}
+            onChange={(e) => setRegenerateDirection(e.target.value)}
+            placeholder="例如：改成环保主题 / 更突出性价比"
+            rows={2}
+            maxLength={200}
+          />
+          {error && <p className="generate-error"><AlertCircle size={13} />{error}</p>}
+          <div className="modal-foot">
+            <span>将保持模板的配色、字体与风格</span>
+            <button className="primary-button" disabled={busy} onClick={() => void submitRegenerate(regenerateDialog.section, regenerateDirection)}>
+              {busy ? <LoaderCircle size={15} className="spin" /> : <Sparkles size={15} />}
+              {busy ? busyText : "重生成此板块"}
+            </button>
+          </div>
         </div></div>
       )}
     </div>

@@ -37,7 +37,7 @@ export type Template = {
   source: {
     name: string;
     repoUrl: string;
-    license: "MIT";
+    license: "MIT" | "Internal";
     framework: string;
     demoUrl: string;
     localPath: string;

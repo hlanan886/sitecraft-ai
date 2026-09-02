@@ -5,18 +5,24 @@ import type { Locale, SiteDraft } from "@/lib/site-model";
 
 type FrameVariant = "thumbnail" | "preview" | "workspace" | "published";
 
+export type LeadFormFields = Record<string, FormDataEntryValue>;
+export type LeadSubmitResult = { ok: boolean; message?: string };
+
 type OpenSourceTemplateFrameProps = {
   templateId: string;
+  siteKey?: string;
   draft?: SiteDraft;
   locale?: Locale;
   variant?: FrameVariant;
   expectedTargets?: string[];
-  onSelectTarget?: (target: string, label: string, prompt: string) => void;
+  onSelectTarget?: (target: string, label: string, prompt: string, slot?: string) => void;
   onApplyReport?: (report: {
     revision: number;
     appliedSlots: string[];
     missingSlots: string[];
   }) => void;
+  onPreviewStateChange?: (state: "loading" | "ready" | "error") => void;
+  onLeadSubmit?: (fields: LeadFormFields) => Promise<LeadSubmitResult>;
 };
 
 const targetPrompts: Record<string, { label: string; prompt: string }> = {
@@ -33,19 +39,34 @@ const targetPrompts: Record<string, { label: string; prompt: string }> = {
 
 export function OpenSourceTemplateFrame({
   templateId,
+  siteKey,
   draft,
   locale = "zh",
   variant = "preview",
   expectedTargets = [],
   onSelectTarget,
   onApplyReport,
+  onPreviewStateChange,
+  onLeadSubmit,
 }: OpenSourceTemplateFrameProps) {
   const frameRef = useRef<HTMLIFrameElement>(null);
+  const resolvedRef = useRef(false);
+
+  useEffect(() => {
+    resolvedRef.current = false;
+    onPreviewStateChange?.("loading");
+    const timeout = window.setTimeout(() => {
+      if (resolvedRef.current) return;
+      resolvedRef.current = true;
+      onPreviewStateChange?.("error");
+    }, 8000);
+    return () => window.clearTimeout(timeout);
+  }, [draft?.revision, onPreviewStateChange, templateId, variant]);
 
   useEffect(() => {
     const frameWindow = frameRef.current?.contentWindow;
     if (!frameWindow) return;
-    const payload = { type: "sitecraft:content", templateId, draft, locale, expectedTargets, variant };
+    const payload = { type: "sitecraft:content", templateId, siteKey, draft, locale, expectedTargets, variant };
     frameWindow.postMessage(payload, "*");
     const retry = window.setTimeout(() => frameWindow.postMessage(payload, "*"), 500);
     const finalRetry = window.setTimeout(() => frameWindow.postMessage(payload, "*"), 1500);
@@ -64,26 +85,56 @@ export function OpenSourceTemplateFrame({
       if (event.source !== frameRef.current?.contentWindow) return;
       const data = event.data as {
         type?: string;
+        templateId?: string;
+        siteKey?: string;
         target?: string;
+        slot?: string;
         revision?: number;
         appliedSlots?: string[];
         missingSlots?: string[];
+        requestId?: string;
+        fields?: LeadFormFields;
       };
       if (data?.type === "sitecraft:select" && data.target && onSelectTarget) {
         const target = targetPrompts[data.target];
-        if (target) onSelectTarget(data.target, target.label, target.prompt);
+        if (target) onSelectTarget(data.slot || data.target, target.label, target.prompt, data.slot);
       }
-      if (data?.type === "sitecraft:applied" && typeof data.revision === "number" && onApplyReport) {
-        onApplyReport({ revision: data.revision, appliedSlots: data.appliedSlots ?? [], missingSlots: data.missingSlots ?? [] });
+      if (data?.type === "sitecraft:ready" && !draft && !resolvedRef.current) {
+        resolvedRef.current = true;
+        onPreviewStateChange?.("ready");
+      }
+      if (data?.type === "sitecraft:applied" && typeof data.revision === "number") {
+        if (!resolvedRef.current) {
+          resolvedRef.current = true;
+          onPreviewStateChange?.("ready");
+        }
+        if (onApplyReport) {
+          onApplyReport({ revision: data.revision, appliedSlots: data.appliedSlots ?? [], missingSlots: data.missingSlots ?? [] });
+        }
+      }
+      if (data?.type === "sitecraft:lead-submit" && data.templateId === templateId && data.siteKey === siteKey && data.fields && onLeadSubmit) {
+        void onLeadSubmit(data.fields)
+          .then((result) => {
+            frameRef.current?.contentWindow?.postMessage(
+              { type: "sitecraft:lead-result", templateId, siteKey, requestId: data.requestId, ...result },
+              "*",
+            );
+          })
+          .catch(() => {
+            frameRef.current?.contentWindow?.postMessage(
+              { type: "sitecraft:lead-result", templateId, siteKey, requestId: data.requestId, ok: false, message: "提交失败，请稍后重试。" },
+              "*",
+            );
+          });
       }
     };
     window.addEventListener("message", receiveMessage);
     return () => window.removeEventListener("message", receiveMessage);
-  }, [onApplyReport, onSelectTarget]);
+  }, [draft, onApplyReport, onLeadSubmit, onPreviewStateChange, onSelectTarget, siteKey, templateId]);
 
   const sendContent = () => {
     frameRef.current?.contentWindow?.postMessage(
-      { type: "sitecraft:content", templateId, draft, locale, expectedTargets, variant },
+      { type: "sitecraft:content", templateId, siteKey, draft, locale, expectedTargets, variant },
       "*",
     );
   };
@@ -92,11 +143,16 @@ export function OpenSourceTemplateFrame({
     <iframe
       ref={frameRef}
       className={`open-source-template-frame open-source-template-frame-${variant}`}
-      src={`/api/templates/${encodeURIComponent(templateId)}/preview?v=20260823-11`}
+      src={`/api/templates/${encodeURIComponent(templateId)}/preview?v=20260902-12`}
       title={`开源模板 ${templateId} 预览`}
       loading={variant === "thumbnail" ? "lazy" : "eager"}
       sandbox="allow-scripts allow-forms"
       onLoad={sendContent}
+      onError={() => {
+        if (resolvedRef.current) return;
+        resolvedRef.current = true;
+        onPreviewStateChange?.("error");
+      }}
     />
   );
 }

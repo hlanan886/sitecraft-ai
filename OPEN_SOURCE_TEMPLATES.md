@@ -19,6 +19,12 @@ The template catalog is sourced from public repositories with MIT licenses. The 
 | ASTROGENT | [fauziralpiandi/astrogent](https://github.com/fauziralpiandi/astrogent) | MIT | Astro + Tailwind | [astrogent.vercel.app](https://astrogent.vercel.app/) |
 | DEVPORTFOLIO | [RyanFitzgerald/devportfolio](https://github.com/RyanFitzgerald/devportfolio) | MIT | HTML + Sass + JavaScript | [GitHub Pages](https://ryanfitzgerald.github.io/devportfolio) |
 | FOXI | [oxygenna-themes/foxi-astro-theme](https://github.com/oxygenna-themes/foxi-astro-theme) | MIT | Astro + Tailwind | [foxi.netlify.app](https://foxi.netlify.app/) |
+| SCREWFAST | [mearashadowfax/ScrewFast](https://github.com/mearashadowfax/ScrewFast) | MIT | Astro + Tailwind | [screwfast.uk](https://screwfast.uk/) |
+| TAILWIND LANDING | [tailwindtoolbox/Landing-Page](https://github.com/tailwindtoolbox/Landing-Page) | MIT | HTML + Tailwind | [tailwindtoolbox.github.io/Landing-Page](https://tailwindtoolbox.github.io/Landing-Page) |
+| NEXT LANDING | [ixartz/Next-JS-Landing-Page-Starter-Template](https://github.com/ixartz/Next-JS-Landing-Page-Starter-Template) | MIT | Next.js + Tailwind | [creativedesignsguru.com](https://creativedesignsguru.com) |
+| SHADCN PRO | [nobruf/shadcn-landing-page](https://github.com/nobruf/shadcn-landing-page) | MIT | Next.js + shadcn/ui + Tailwind | [shadcn-landing-page-livid.vercel.app](https://shadcn-landing-page-livid.vercel.app) |
+| FRESH | [cssninjaStudio/fresh](https://github.com/cssninjaStudio/fresh) | MIT | Astro + Tailwind | [fresh.cssninja.io](https://fresh.cssninja.io/) |
+| SHADCN LANDING | [leoMirandaa/shadcn-landing-page](https://github.com/leoMirandaa/shadcn-landing-page) | MIT | Next.js + shadcn/ui + Tailwind | [shadcn-landing-page.vercel.app](https://shadcn-landing-page.vercel.app/) |
 | YUKINA | [WhitePaper233/yukina](https://github.com/WhitePaper233/yukina) | MIT | Astro + Tailwind | [yukina-blog.vercel.app](https://yukina-blog.vercel.app) |
 
 The complete upstream sources are pinned as Git submodules under `vendor/open-source-templates/<id>`, including the upstream license files. Clone with `--recurse-submodules` to populate them. RicoFast declares MIT in its `package.json`. The application renders allowlisted official demos through a read-only preview adapter and maps structured content into those pages without executing upstream scripts.
