@@ -1,4 +1,17 @@
-import type { Template } from "@/lib/site-model";
+import type { Locale, Template } from "./site-model.ts";
+import { supportsTemplateLocale } from "./template-manifest.ts";
+
+export type TemplateCapability = "catalog" | "inquiry" | "bilingual" | "blog" | "caseStudy" | "portfolio";
+
+export type MatchingProfile = {
+  industries: string[];
+  audiences: string[];
+  siteTypes: string[];
+  styles: string[];
+  locales: Locale[];
+  capabilities: TemplateCapability[];
+  aliases: string[];
+};
 
 const commonGuardrails = [
   "保留上游模板的导航、栅格、留白、字体尺度和响应式结构",
@@ -208,6 +221,7 @@ export const templateCatalog: Template[] = [
     category: "专业服务",
     description: "个人与工作室作品集模板，以项目、经历和专业能力为核心。",
     tags: ["作品集", "工作室", "个人品牌"],
+    shape: "portfolio",
     colors: { primary: "#202020", secondary: "#f5f5f5", accent: "#4f7cff" },
     headline: "Selected work,\nwith a clear point of view.",
     subtitle: "A portfolio for specialists and small creative teams.",
@@ -226,6 +240,7 @@ export const templateCatalog: Template[] = [
     category: "专业服务",
     description: "阅读体验优先的极简内容模板，适合专家、研究和企业知识库。",
     tags: ["博客", "知识内容", "阅读体验"],
+    shape: "blog",
     colors: { primary: "#1e293b", secondary: "#f8fafc", accent: "#f59e0b" },
     headline: "Ideas worth\nkeeping clear.",
     subtitle: "A fast, accessible home for durable knowledge.",
@@ -280,6 +295,7 @@ export const templateCatalog: Template[] = [
     category: "科技企业",
     description: "经典开发者作品集，集中呈现技能、项目与职业经历。",
     tags: ["开发者", "项目履历", "技术品牌"],
+    shape: "portfolio",
     colors: { primary: "#0f172a", secondary: "#f1f5f9", accent: "#38bdf8" },
     headline: "Engineering,\nmade tangible.",
     subtitle: "Projects, experience and technical strengths in one clear profile.",
@@ -316,6 +332,7 @@ export const templateCatalog: Template[] = [
     category: "专业服务",
     description: "精致的内容与博客主题，适合品牌杂志、团队动态和专业观点。",
     tags: ["品牌内容", "博客杂志", "文章归档"],
+    shape: "blog",
     colors: { primary: "#263238", secondary: "#f7f7f5", accent: "#d97706" },
     headline: "A living record\nof useful work.",
     subtitle: "An editorial home for company insight, news and field notes.",
@@ -328,4 +345,185 @@ export const templateCatalog: Template[] = [
       ["改成制造企业品牌杂志", "建立新闻、案例和技术洞察栏目", "重写首页导语但不要营销化"],
     ),
   },
+  {
+    id: "fresh",
+    name: "FRESH / SaaS Landing",
+    category: "科技企业",
+    description: "现代深色 SaaS 落地页，强调产品界面、功能与转化。",
+    tags: ["SaaS", "深色现代", "产品界面"],
+    colors: { primary: "#0f0f23", secondary: "#181832", accent: "#6d5ef2" },
+    headline: "Ship the next\nstandard.",
+    subtitle: "A bold, dark SaaS foundation built for product-led teams.",
+    source: { name: "Fresh", repoUrl: "https://github.com/cssninjaStudio/fresh", license: "MIT", framework: "Astro + Tailwind", demoUrl: "https://fresh.cssninja.io/", localPath: "vendor/open-source-templates/fresh" },
+    promptProfile: prompt(
+      "SaaS 产品营销编辑，把产品界面、功能与客户结果放在最前",
+      ["产品价值 Hero", "产品界面展示", "功能网格", "客户证明", "转化 CTA"],
+      ["保留深色高对比视觉", "产品截图优先于抽象描述", "功能标题使用业务结果动词"],
+      heroTargets("用可衡量的产品结果开场", "说明核心功能、适用团队与落地路径"),
+      ["改成数据可视化 SaaS 官网", "把首屏改成产品界面演示", "为开发者受众组织功能模块"],
+    ),
+  },
+  {
+    id: "shadcn-landing",
+    name: "SHADCN / Modern Landing",
+    category: "科技企业",
+    description: "基于 shadcn/ui 的现代浅色落地页，组件完整、风格克制。",
+    tags: ["shadcn/ui", "现代浅色", "开发者友好"],
+    colors: { primary: "#18181b", secondary: "#fafafa", accent: "#6d28d9" },
+    headline: "Build what\nusers feel.",
+    subtitle: "A calm, component-driven landing page for modern software teams.",
+    source: { name: "Shadcn Landing Page", repoUrl: "https://github.com/leoMirandaa/shadcn-landing-page", license: "MIT", framework: "Next.js + shadcn/ui + Tailwind", demoUrl: "https://shadcn-landing-page.vercel.app/", localPath: "vendor/open-source-templates/shadcn-landing" },
+    promptProfile: prompt(
+      "开发者工具营销编辑，用克制的设计语言讲清楚产品价值",
+      ["产品价值 Hero", "功能特性", "使用流程", "技术集成", "转化 CTA"],
+      ["保留浅色高对比与精确排版", "功能描述避免夸大", "集成说明突出技术细节"],
+      heroTargets("一句话说明开发者工具解决什么问题", "补充使用场景、集成方式与差异化"),
+      ["改成开发者 API 工具官网", "把功能按使用场景重排", "为首屏加一段真实代码示例"],
+    ),
+  },
+  {
+    id: "screwfast",
+    name: "SCREWFAST / Industrial",
+    category: "制造业",
+    description: "为制造与工业企业设计的 Astro 模板，强调产品线、应用场景与工程可信度。",
+    tags: ["工业制造", "产品线", "工程可信"],
+    colors: { primary: "#1f3a5f", secondary: "#eef2f7", accent: "#f2a33c" },
+    headline: "Engineered to\nperform.",
+    subtitle: "Precision products, proven in the field.",
+    source: { name: "ScrewFast", repoUrl: "https://github.com/mearashadowfax/ScrewFast", license: "MIT", framework: "Astro + Tailwind", demoUrl: "https://screwfast.uk/", localPath: "vendor/open-source-templates/screwfast" },
+    promptProfile: prompt(
+      "工业企业官网架构师，强调产品线、应用场景与工程可信度",
+      ["产品导向 Hero", "核心产品线", "应用场景", "工程优势", "联系 CTA"],
+      ["保留工业蓝灰配色与金属感", "产品信息先于企业故事", "突出认证与质量体系"],
+      heroTargets("用可验证的产品能力或工程价值作标题", "用两句以内说明产品范围、应用场景与交付能力"),
+      ["把首屏改成高精度轴承制造商", "突出三大核心产品线", "把 CTA 改为获取产品样本"],
+    ),
+  },
+  {
+    id: "tailwind-landing",
+    name: "TAILWIND LANDING / Business",
+    category: "外贸目录",
+    description: "纯 Tailwind 的多用途企业落地页，简洁、响应式、转化组件完整。",
+    tags: ["落地页", "多用途", "Tailwind"],
+    colors: { primary: "#1f2937", secondary: "#f9fafb", accent: "#f59e0b" },
+    headline: "Take the\nnext step.",
+    subtitle: "A clear, responsive landing page for businesses going further.",
+    source: { name: "Tailwind Landing", repoUrl: "https://github.com/tailwindtoolbox/Landing-Page", license: "MIT", framework: "HTML + Tailwind", demoUrl: "https://tailwindtoolbox.github.io/Landing-Page", localPath: "vendor/open-source-templates/tailwind-landing" },
+    promptProfile: prompt(
+      "多用途企业落地页编辑，保持信息直接、模块完整、行动清晰",
+      ["左右分栏 Hero", "功能说明", "数据/评价", "价格或询盘 CTA", "联系"],
+      ["保持 Tailwind 清晰层级", "功能点不超过两句", "无报价信息时将价格区改为询盘"],
+      heroTargets("直接说明产品类别和首要价值", "用客户能理解的语言解释用途和适用场景"),
+      ["改成工业设备出口落地页", "移除定价语气改为询盘", "把产品优势整理成六项"],
+    ),
+  },
+  {
+    id: "nextjs-landing",
+    name: "NEXT LANDING / Corporate",
+    category: "专业服务",
+    description: "开发者优先的 Next.js 企业落地页，结构清晰、适合内容型官网。",
+    tags: ["Next.js", "企业官网", "开发者友好"],
+    colors: { primary: "#2563eb", secondary: "#eef4ff", accent: "#f59e0b" },
+    headline: "Clarity for\nyour next move.",
+    subtitle: "A focused, developer-friendly home for teams with something to say.",
+    source: { name: "Next.js Landing Starter", repoUrl: "https://github.com/ixartz/Next-JS-Landing-Page-Starter-Template", license: "MIT", framework: "Next.js + Tailwind", demoUrl: "https://creativedesignsguru.com", localPath: "vendor/open-source-templates/nextjs-landing" },
+    promptProfile: prompt(
+      "企业官网编辑，用清晰的层级讲好服务、观点与专业能力",
+      ["双栏 Hero", "核心服务", "价值说明", "案例/观点", "联系 CTA"],
+      ["保持成熟中性的商业风格", "将长内容分成可扫描的小节", "标题避免广告腔"],
+      heroTargets("概括企业专长与长期价值", "用一段话连接服务、客户问题和内容资产"),
+      ["改成技术咨询公司内容官网", "规划服务与博客栏目", "让首屏更专业、更少营销味"],
+    ),
+  },
+  {
+    id: "shadcn-landing2",
+    name: "SHADCN PRO / Modern",
+    category: "科技企业",
+    description: "基于 shadcn/ui 的现代落地页，组件丰富、风格克制、适合开发者工具。",
+    tags: ["shadcn/ui", "现代浅色", "开发者工具"],
+    colors: { primary: "#111827", secondary: "#f8fafc", accent: "#6366f1" },
+    headline: "Build the\nnext thing.",
+    subtitle: "A calm, component-driven landing page for modern software teams.",
+    source: { name: "Shadcn Landing (Pro)", repoUrl: "https://github.com/nobruf/shadcn-landing-page", license: "MIT", framework: "Next.js + shadcn/ui + Tailwind", demoUrl: "https://shadcn-landing-page-livid.vercel.app", localPath: "vendor/open-source-templates/shadcn-landing2" },
+    promptProfile: prompt(
+      "开发者工具营销编辑，用克制的设计语言讲清楚产品价值",
+      ["产品价值 Hero", "功能特性", "使用流程", "技术集成", "转化 CTA"],
+      ["保留浅色高对比与精确排版", "功能描述避免夸大", "集成说明突出技术细节"],
+      heroTargets("一句话说明开发者工具解决什么问题", "补充使用场景、集成方式与差异化"),
+      ["改成开发者 API 工具官网", "把功能按使用场景重排", "为首屏加一段真实代码示例"],
+    ),
+  },
 ];
+
+export function getLocaleCompatibleTemplates(locale: Locale) {
+  return templateCatalog.filter((template) => supportsTemplateLocale(template.id, locale));
+}
+
+const CATEGORY_INDUSTRIES: Record<Template["category"], string> = {
+  "制造业": "industrial_automation",
+  "外贸目录": "export_trade",
+  "科技企业": "software_ai",
+  "专业服务": "professional_services",
+};
+
+/**
+ * 从现有模板 catalog、prompt profile 和 manifest 派生匹配画像。
+ * 画像不依赖英文模板名，新增模板只要补齐现有 catalog 字段即可参与排序。
+ */
+export function getTemplateMatchingProfile(template: Template): MatchingProfile {
+  const searchable = [
+    template.id,
+    template.name,
+    template.description,
+    ...template.tags,
+    ...template.promptProfile.structure,
+    ...template.promptProfile.starters,
+  ].join(" ");
+  const capabilities: TemplateCapability[] = [];
+  if (/产品|产品线|产品目录|product|catalog|pricing/i.test(searchable)) capabilities.push("catalog");
+  if (/询盘|联系|转化|cta|inquiry|contact/i.test(searchable)) capabilities.push("inquiry");
+  if (/双语|多语言|全球|global|bilingual|language/i.test(searchable) || template.category === "外贸目录") capabilities.push("bilingual");
+  if (/博客|文章|内容|知识|blog|editorial|knowledge/i.test(searchable)) capabilities.push("blog");
+  if (/案例|服务|咨询|机构|agency|case|consult/i.test(searchable)) capabilities.push("caseStudy");
+  if (/作品集|portfolio|个人品牌/i.test(searchable)) capabilities.push("portfolio");
+
+  const siteTypes = new Set<string>(["corporate"]);
+  if (capabilities.includes("catalog")) siteTypes.add("catalog");
+  if (capabilities.includes("caseStudy")) siteTypes.add("service");
+  if (capabilities.includes("portfolio")) siteTypes.add("portfolio");
+  // 显式 shape 优先决定 blog/portfolio 站点类型；缺省时由能力词兜底（兼容旧行为）。
+  // 企业向模板即使 promptProfile 含"博客/内容/作品"字眼，shape 缺省=corporate，不误收。
+  if (template.shape === "blog") siteTypes.add("blog");
+  else if (template.shape === "portfolio") siteTypes.add("portfolio");
+  else {
+    if (/博客|文章|内容站|知识库|blog|editorial|newsletter/i.test(template.name + template.description + template.tags.join(" "))) siteTypes.add("blog");
+    if (/作品集|个人品牌|portfolio/i.test(template.name + template.description + template.tags.join(" "))) siteTypes.add("portfolio");
+  }
+
+  const styles = new Set<string>();
+  if (/深色|dark|极客|科技/i.test(searchable)) styles.add("dark");
+  if (/编辑|editorial|杂志|阅读/i.test(searchable)) styles.add("editorial");
+  if (/极简|留白|简洁|minimal|clean/i.test(searchable)) styles.add("minimal");
+  if (/现代|modern|SaaS|科技/i.test(searchable)) styles.add("modern");
+  if (/工业|工程|硬核|industrial|technical/i.test(searchable)) styles.add("technical");
+
+  const audiences = template.category === "外贸目录"
+    ? ["overseasB2b", "globalB2b"]
+    : template.category === "制造业"
+      ? ["domesticB2b", "overseasB2b"]
+      : template.category === "科技企业"
+        ? ["domesticB2b", "globalB2b", "investorsPartners"]
+        : ["domesticB2b", "endUsers", "investorsPartners"];
+
+  const candidateLocales = ["zh", "en"] as const satisfies readonly Locale[];
+
+  return {
+    industries: [CATEGORY_INDUSTRIES[template.category]],
+    audiences,
+    siteTypes: [...siteTypes],
+    styles: [...styles],
+    locales: candidateLocales.filter((locale) => getLocaleCompatibleTemplates(locale).some((item) => item.id === template.id)),
+    capabilities,
+    aliases: [...new Set([template.id, template.name, ...template.tags])],
+  };
+}

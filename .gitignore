@@ -1,5 +1,6 @@
 node_modules
 .next
+dist
 .sitecraft-data
 .artifact-work
 artifacts
@@ -9,3 +10,7 @@ out
 !.env.example
 *.log
 *.tsbuildinfo
+test-results/
+playwright-report/
+e2e/.cache/
+e2e/test-results/

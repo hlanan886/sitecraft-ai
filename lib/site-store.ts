@@ -1,11 +1,20 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { PoolClient } from "pg";
-import { ensureDatabaseSchema, getDatabasePool, withDatabaseTransaction } from "@/lib/postgres";
-import { defaultDraft, normalizeDraft, templates, type SiteDraft } from "@/lib/site-model";
-import { applySiteOperations, type SiteOperation } from "@/lib/site-operations";
+import { ensureDatabaseSchema, getDatabasePool, withDatabaseTransaction } from "./postgres.ts";
+import { defaultDraft, normalizeDraft, templates, type SiteDraft } from "./site-model.ts";
+import { applySiteOperations, type SiteOperation } from "./site-operations.ts";
+import { throwIfAborted } from "./abort-utils.ts";
+import type { GenerationProvenance } from "./generation-record.ts";
 
 export type ChangeSource = "ai" | "import" | "manual" | "migration" | "template";
+/** AI 变更的可追溯元数据；不包含原始输入正文，只保留哈希和结构化范围。 */
+export type ChangeProvenance = GenerationProvenance & {
+  baseRevision: number;
+  resultRevision?: number;
+  selectedTarget?: string | null;
+  appliedTargets?: string[];
+};
 export type ChangeSet = {
   id: string;
   baseRevision: number;
@@ -17,6 +26,7 @@ export type ChangeSet = {
   appliedTargets: string[];
   model?: string;
   latencyMs?: number;
+  provenance?: ChangeProvenance;
   createdAt: string;
 };
 export type SiteRecord = {
@@ -28,11 +38,17 @@ export type SiteRecord = {
 };
 export type SiteSnapshot = {
   draft: SiteDraft;
-  history: Array<Pick<ChangeSet, "id" | "revision" | "summary" | "source" | "appliedTargets" | "model" | "latencyMs" | "createdAt">>;
+  history: Array<Pick<ChangeSet, "id" | "revision" | "summary" | "source" | "appliedTargets" | "model" | "latencyMs" | "provenance" | "createdAt">>;
   canUndo: boolean;
   canRedo: boolean;
   updatedAt: string;
   isNew?: boolean;
+};
+export type SiteSeed = {
+  name: string;
+  templateId: string;
+  locales: SiteDraft["locale"][];
+  initialDraft: SiteDraft;
 };
 
 const storageRoot = path.join(process.cwd(), ".sitecraft-data", "sites");
@@ -66,12 +82,18 @@ async function readRecord(siteId: string): Promise<SiteRecord | null> {
     throw error;
   }
 }
-async function writeRecord(record: SiteRecord) {
+async function writeRecord(record: SiteRecord, signal?: AbortSignal) {
   await mkdir(storageRoot, { recursive: true });
   const target = recordPath(record.siteId);
   const temp = `${target}.${process.pid}.${crypto.randomUUID()}.tmp`;
   await writeFile(temp, JSON.stringify(record, null, 2), "utf8");
-  await rename(temp, target);
+  try {
+    throwIfAborted(signal);
+    await rename(temp, target);
+  } catch (error) {
+    await unlink(temp).catch(() => undefined);
+    throw error;
+  }
 }
 async function withSiteLock<T>(siteId: string, task: () => Promise<T>): Promise<T> {
   const previous = locks.get(siteId) ?? Promise.resolve();
@@ -87,14 +109,24 @@ async function withSiteLock<T>(siteId: string, task: () => Promise<T>): Promise<
     if (locks.get(siteId) === queue) locks.delete(siteId);
   }
 }
-function createRecord(siteId: string): SiteRecord {
-  return { siteId, draft: structuredClone(defaultDraft), history: [], future: [], updatedAt: new Date().toISOString() };
+function createRecord(siteId: string, draft: SiteDraft = defaultDraft): SiteRecord {
+  return { siteId, draft: normalizeDraft(draft), history: [], future: [], updatedAt: new Date().toISOString() };
+}
+function draftFromSeed(seed: SiteSeed) {
+  const normalized = normalizeDraft(seed.initialDraft);
+  return normalizeDraft({
+    ...normalized,
+    siteName: seed.name,
+    companyName: seed.name,
+    templateId: seed.templateId,
+    locale: seed.locales[0] ?? normalized.locale,
+  });
 }
 export function snapshot(record: SiteRecord, isNew?: boolean): SiteSnapshot {
   return {
     draft: structuredClone(record.draft),
-    history: record.history.slice(-30).reverse().map(({ id, revision, summary, source, appliedTargets, model, latencyMs, createdAt }) => ({
-      id, revision, summary, source, appliedTargets, model, latencyMs, createdAt,
+    history: record.history.slice(-30).reverse().map(({ id, revision, summary, source, appliedTargets, model, latencyMs, provenance, createdAt }) => ({
+      id, revision, summary, source, appliedTargets, model, latencyMs, provenance, createdAt,
     })),
     canUndo: record.history.length > 0,
     canRedo: record.future.length > 0,
@@ -111,9 +143,25 @@ async function getLocalSite(siteId: string) {
     return snapshot(record, true);
   });
 }
+async function createLocalSite(seed: SiteSeed) {
+  const id = crypto.randomUUID();
+  return withSiteLock(id, async () => {
+    const record = createRecord(id, draftFromSeed(seed));
+    await writeRecord(record);
+    return { id, ...snapshot(record, true) };
+  });
+}
 export type CommitResult =
   | { status: "applied"; record: SiteRecord; changeSet: ChangeSet }
   | { status: "no_change"; record: SiteRecord }
+  | { status: "conflict"; record: SiteRecord };
+
+type UndoTargetChange = Pick<ChangeSet, "id" | "revision" | "summary" | "source" | "appliedTargets" | "createdAt">;
+export type ConversationalUndoResult =
+  | { status: "applied"; record: SiteRecord; changeSet: ChangeSet; undoneChange: UndoTargetChange }
+  | { status: "unsafe"; record: SiteRecord; targetChange: UndoTargetChange; laterChanges: UndoTargetChange[] }
+  | { status: "empty"; record: SiteRecord }
+  | { status: "no_change"; record: SiteRecord; targetChange: UndoTargetChange }
   | { status: "conflict"; record: SiteRecord };
 
 type CommitArgs = {
@@ -124,10 +172,13 @@ type CommitArgs = {
   source: ChangeSource;
   model?: string;
   latencyMs?: number;
+  provenance?: ChangeProvenance;
+  signal?: AbortSignal;
 };
 
 async function commitLocalOperations(args: CommitArgs): Promise<CommitResult> {
   return withSiteLock(args.siteId, async () => {
+    throwIfAborted(args.signal);
     const record = (await readRecord(args.siteId)) ?? createRecord(args.siteId);
     if (record.draft.revision !== args.baseRevision) return { status: "conflict", record };
     const result = applySiteOperations(record.draft, args.operations, {
@@ -141,13 +192,21 @@ async function commitLocalOperations(args: CommitArgs): Promise<CommitResult> {
       inverseOperations: result.inverseOperations, appliedTargets: result.appliedTargets,
       ...(args.model ? { model: args.model } : {}),
       ...(args.latencyMs === undefined ? {} : { latencyMs: args.latencyMs }),
+      ...(args.provenance ? {
+        provenance: {
+          ...args.provenance,
+          baseRevision: record.draft.revision,
+          resultRevision: result.draft.revision,
+          appliedTargets: structuredClone(result.appliedTargets),
+        },
+      } : {}),
       createdAt: new Date().toISOString(),
     };
     record.draft = result.draft;
     record.history = [...record.history, changeSet].slice(-50);
     record.future = [];
     record.updatedAt = new Date().toISOString();
-    await writeRecord(record);
+    await writeRecord(record, args.signal);
     return { status: "applied", record, changeSet };
   });
 }
@@ -240,8 +299,23 @@ async function getPostgresSite(siteId: string) {
   return snapshot(rowToRecord(result.rows[0]), inserted.rowCount === 1);
 }
 
+async function createPostgresSite(seed: SiteSeed) {
+  await ensureDatabaseSchema();
+  const id = crypto.randomUUID();
+  const record = createRecord(id, draftFromSeed(seed));
+  const inserted = await getDatabasePool().query(
+    `INSERT INTO sitecraft_sites (workspace_id, site_id, draft, history, future, updated_at)
+     VALUES ($1, $2, $3::jsonb, '[]'::jsonb, '[]'::jsonb, $4)
+     RETURNING site_id`,
+    [workspaceId, id, JSON.stringify(record.draft), record.updatedAt],
+  );
+  if (inserted.rowCount !== 1) throw new Error("Site record could not be created");
+  return { id, ...snapshot(record, true) };
+}
+
 async function commitPostgresOperations(args: CommitArgs): Promise<CommitResult> {
   return withDatabaseTransaction(async (client) => {
+    throwIfAborted(args.signal);
     const record = await lockPostgresRecord(client, args.siteId);
     if (record.draft.revision !== args.baseRevision) return { status: "conflict", record };
     const result = applySiteOperations(record.draft, args.operations, {
@@ -260,6 +334,14 @@ async function commitPostgresOperations(args: CommitArgs): Promise<CommitResult>
       appliedTargets: result.appliedTargets,
       ...(args.model ? { model: args.model } : {}),
       ...(args.latencyMs === undefined ? {} : { latencyMs: args.latencyMs }),
+      ...(args.provenance ? {
+        provenance: {
+          ...args.provenance,
+          baseRevision: record.draft.revision,
+          resultRevision: result.draft.revision,
+          appliedTargets: structuredClone(result.appliedTargets),
+        },
+      } : {}),
       createdAt: new Date().toISOString(),
     };
     record.draft = result.draft;
@@ -268,7 +350,7 @@ async function commitPostgresOperations(args: CommitArgs): Promise<CommitResult>
     record.updatedAt = new Date().toISOString();
     await savePostgresRecord(client, record);
     return { status: "applied", record, changeSet };
-  });
+  }, args.signal);
 }
 
 async function movePostgresHistory(siteId: string, action: "undo" | "redo") {
@@ -299,12 +381,70 @@ export function getSite(siteId: string) {
   return usePostgres ? getPostgresSite(siteId) : getLocalSite(siteId);
 }
 
+export function createSite(seed: SiteSeed) {
+  return usePostgres ? createPostgresSite(seed) : createLocalSite(seed);
+}
+
 export function commitOperations(args: CommitArgs): Promise<CommitResult> {
   return usePostgres ? commitPostgresOperations(args) : commitLocalOperations(args);
 }
 
 export function moveHistory(siteId: string, action: "undo" | "redo") {
   return usePostgres ? movePostgresHistory(siteId, action) : moveLocalHistory(siteId, action);
+}
+
+function undoTarget(changeSet: ChangeSet): UndoTargetChange {
+  const { id, revision, summary, source, appliedTargets, createdAt } = changeSet;
+  return { id, revision, summary, source, appliedTargets: structuredClone(appliedTargets), createdAt };
+}
+
+async function readFullRecord(siteId: string) {
+  if (!usePostgres) return (await readRecord(siteId)) ?? createRecord(siteId);
+  await getPostgresSite(siteId);
+  const result = await getDatabasePool().query<SiteRow>(
+    `SELECT site_id, draft, history, future, updated_at
+     FROM sitecraft_sites WHERE workspace_id = $1 AND site_id = $2`,
+    [workspaceId, siteId],
+  );
+  if (!result.rows[0]) throw new Error("Site record could not be read");
+  return rowToRecord(result.rows[0]);
+}
+
+export function isConversationalUndoMessage(message: string) {
+  const normalized = message.trim().toLowerCase().replace(/\s+/g, "").replace(/[。！？!?，,]/g, "");
+  return /^(?:请帮我|帮我|请)?(?:改回上一条|撤销(?:刚才|上一条|上一次)(?:的)?(?:ai)?(?:修改|改动)|恢复到(?:上一次|上一条)(?:ai)?(?:修改|改动)前)$/.test(normalized);
+}
+
+export async function undoLatestAiChange(args: {
+  siteId: string;
+  baseRevision: number;
+  signal?: AbortSignal;
+}): Promise<ConversationalUndoResult> {
+  const record = await readFullRecord(args.siteId);
+  if (record.draft.revision !== args.baseRevision) return { status: "conflict", record };
+  const targetIndex = record.history.findLastIndex((changeSet) => changeSet.source === "ai");
+  if (targetIndex < 0) return { status: "empty", record };
+  const targetChange = record.history[targetIndex];
+  const laterChanges = record.history.slice(targetIndex + 1);
+  if (laterChanges.length) {
+    return {
+      status: "unsafe",
+      record,
+      targetChange: undoTarget(targetChange),
+      laterChanges: laterChanges.map(undoTarget),
+    };
+  }
+  const committed = await commitOperations({
+    siteId: args.siteId,
+    baseRevision: args.baseRevision,
+    operations: targetChange.inverseOperations,
+    summary: `撤销 AI 修改：${targetChange.summary}`,
+    source: "manual",
+    signal: args.signal,
+  });
+  if (committed.status === "conflict") return { status: "conflict", record: committed.record };
+  if (committed.status === "no_change") return { status: "no_change", record: committed.record, targetChange: undoTarget(targetChange) };
+  return { status: "applied", record: committed.record, changeSet: committed.changeSet, undoneChange: undoTarget(targetChange) };
 }
 
 export function getSiteStoreStatus() {

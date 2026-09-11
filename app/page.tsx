@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { Route } from "next";
+import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
   ChevronRight,
@@ -14,6 +15,7 @@ import {
   Sparkles,
   WandSparkles,
 } from "lucide-react";
+import { useState } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 
 const sites = [
@@ -107,6 +109,10 @@ export default function Dashboard() {
             <Link href="/templates" className="primary-button new-site-button">
               <WandSparkles size={15} />
               开始一个新项目 <ArrowUpRight size={14} />
+            </Link>
+            <Link href={"/generate" as Route} className="secondary-button new-site-button" style={{ marginLeft: 10 }}>
+              <MessageSquareText size={15} />
+              用一句话开始
             </Link>
           </div>
           <div className="stats">
@@ -216,6 +222,11 @@ export default function Dashboard() {
                 <h2>快速开始</h2>
               </div>
               <div className="quick-list">
+                <Link href={"/generate" as Route} className="quick-item">
+                  <MessageSquareText size={14} />
+                  用一句话生成一个网站
+                  <ArrowUpRight size={12} style={{ marginLeft: "auto" }} />
+                </Link>
                 <Link href="/templates" className="quick-item">
                   <WandSparkles size={14} />
                   从模板开始一个站点

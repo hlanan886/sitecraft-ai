@@ -2,13 +2,17 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { defaultDraft } from "../lib/site-document.ts";
 import {
+  buildLocalPreviewSlots,
+  buildTemplateCapabilitySummary,
   checkSelectedTargetConformance,
   isConcreteSelectedTarget,
   nonVisualTemplateNotice,
   preflightTemplateSlots,
+  resolveOperationTarget,
   selectedTargetMismatchMessage,
   shouldEnforceSelectedTarget,
   unsupportedTemplateSlotMessage,
+  validateOperationScope,
 } from "../lib/template-slot-guard.ts";
 import type { SiteOperation } from "../lib/site-operations.ts";
 
@@ -18,6 +22,31 @@ test("keeps direct API callers backward compatible when no slot report is provid
     operations: [{ op: "update_card", section: "services", index: 1, locale: "zh", title: "产线集成" }],
   });
   assert.deepEqual(result, { unsupportedTargets: [], nonVisualTargets: [] });
+});
+
+test("template capability summary exposes manifest constraints without leaking selectors", () => {
+  const summary = buildTemplateCapabilitySummary("forge", "zh");
+  assert.equal(summary.templateId, "forge");
+  assert.equal(summary.manifestVersion, 1);
+  assert.deepEqual(summary.locales, ["zh", "en"]);
+  assert.ok(summary.editableSlots.includes("hero.title"));
+  assert.ok(summary.editableSlots.includes("products"));
+  assert.ok(summary.nonContentSlots.includes("brand.logo"));
+  assert.equal("selector" in summary, false);
+});
+
+test("local preview capabilities only advertise fields rendered by SiteRenderer", () => {
+  const slots = buildLocalPreviewSlots(defaultDraft);
+  assert.ok(slots.includes("companyName.zh"));
+  assert.ok(slots.includes("industry.zh"));
+  assert.ok(slots.includes("navigation.services.en"));
+  assert.ok(slots.includes("services.items.1.title.zh"));
+  assert.ok(slots.includes("products.FM-2401.category"));
+  assert.ok(slots.includes("features.visibility"));
+  assert.equal(slots.includes("siteName.zh"), false);
+  assert.equal(slots.includes("features.items.0.title.zh"), false);
+  assert.equal(slots.includes("services.intro.zh"), false);
+  assert.equal(slots.includes("contact.phone.zh"), false);
 });
 
 test("blocks a service card edit when the current template has no matching card slot", () => {
@@ -117,6 +146,27 @@ test("rejects an old session target when the user refers to an exact selected sl
   });
   assert.equal(result.enforced, true);
   assert.equal(result.matches, false);
+  assert.deepEqual(result.operationTargets, ["services.items.1.title.zh"]);
+});
+
+test("resolves a stable card id to the current index after reorder", () => {
+  const result = resolveOperationTarget(defaultDraft, "integration");
+  assert.deepEqual(result, { targetId: "services.items.1", confidence: "exact" });
+});
+
+test("rejects an operation outside the selected hero scope", () => {
+  const result = validateOperationScope({
+    op: "update_card",
+    section: "services",
+    index: 1,
+    locale: "zh",
+    title: "不应修改",
+  }, {
+    message: "修改我选中的首屏标题",
+    selectedTarget: "hero.title.zh",
+    draft: defaultDraft,
+  });
+  assert.equal(result.allowed, false);
   assert.deepEqual(result.operationTargets, ["services.items.1.title.zh"]);
 });
 

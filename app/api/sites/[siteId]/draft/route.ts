@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { siteDraftSchema } from "@/lib/site-document";
+import { accessErrorResponse, authorizeRequest } from "@/lib/request-context";
 import { siteOperationSchema } from "@/lib/site-operations";
 import { commitOperations, getSite, snapshot } from "@/lib/site-store";
 
@@ -12,12 +13,18 @@ const updateSchema = z.object({
   source: z.enum(["import", "manual", "migration", "template"]),
 });
 
-export async function GET(_request: Request, { params }: { params: Promise<{ siteId: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ siteId: string }> }) {
+  const access = authorizeRequest(request, "read");
+  const denied = accessErrorResponse(access);
+  if (denied) return denied;
   const { siteId } = await params;
   return Response.json(await getSite(siteId), { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ siteId: string }> }) {
+  const access = authorizeRequest(request, "edit");
+  const denied = accessErrorResponse(access);
+  if (denied) return denied;
   const parsed = updateSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "Invalid draft update", details: parsed.error.flatten() }, { status: 400 });
   for (const operation of parsed.data.operations) {

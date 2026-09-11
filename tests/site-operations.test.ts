@@ -3,6 +3,7 @@ import test from "node:test";
 import { defaultDraft } from "../lib/site-document.ts";
 import {
   applySiteOperations,
+  aiChangeSchema,
   describeDestructive,
   isDestructiveOperation,
   validateAIOperations,
@@ -116,6 +117,77 @@ test("does not increment revision for a no-op", () => {
   assert.equal(result.changed, false);
   assert.equal(result.draft.revision, defaultDraft.revision);
   assert.deepEqual(result.appliedTargets, []);
+});
+
+test("resolves a reordered service card by itemId instead of stale index", () => {
+  const draft = structuredClone(defaultDraft);
+  const target = draft.content.services.items[1];
+  draft.content.services.items = [draft.content.services.items[2], target, draft.content.services.items[0]];
+
+  const result = applySiteOperations(draft, [{
+    op: "update_card",
+    section: "services",
+    index: 0,
+    itemId: target.id,
+    locale: "zh",
+    title: "按稳定 ID 修改",
+  }], { templateIds, lastChange: "AI saved" });
+
+  assert.equal(result.draft.content.services.items[1].title.zh, "按稳定 ID 修改");
+  assert.notEqual(result.draft.content.services.items[0].title.zh, "按稳定 ID 修改");
+});
+
+test("accepts a card operation carrying itemId and expectedValue", () => {
+  const parsed = aiChangeSchema.safeParse({
+    summary: "更新服务",
+    operations: [{
+      op: "update_card",
+      section: "services",
+      itemId: "integration",
+      locale: "zh",
+      title: "方案与实施",
+      expectedValue: "旧标题",
+    }],
+  });
+  assert.equal(parsed.success, true);
+  if (parsed.success && parsed.data.operations[0].op === "update_card") {
+    assert.equal(parsed.data.operations[0].index, 0);
+    assert.equal(parsed.data.operations[0].itemId, "integration");
+  }
+});
+
+test("rejects an expectedValue mismatch without changing the draft revision", () => {
+  const operation: SiteOperation = {
+    op: "set_text",
+    target: "hero.title",
+    locale: "zh",
+    value: "新标题",
+    expectedValue: "旧标题已经不存在",
+  };
+
+  assert.throws(
+    () => applySiteOperations(defaultDraft, [operation], { templateIds, lastChange: "AI saved" }),
+    /前置条件不满足/,
+  );
+  assert.equal(defaultDraft.revision, 1);
+  assert.equal(defaultDraft.content.hero.title.zh, "为下一代标准而造。");
+});
+
+test("applies design tokens as one reversible draft change", () => {
+  const tokens = {
+    primary: "#18385f",
+    secondary: "#e7eef7",
+    accent: "#f0bd59",
+    fontStyle: "technical" as const,
+    radius: "sharp" as const,
+    density: "compact" as const,
+  };
+  const result = applySiteOperations(defaultDraft, [{ op: "set_design_tokens", tokens }], { templateIds, lastChange: "Design variant" });
+  assert.equal(result.changed, true);
+  assert.deepEqual(result.draft.designTokens, tokens);
+  assert.deepEqual(result.appliedTargets, ["design.tokens"]);
+  const restored = applySiteOperations(result.draft, result.inverseOperations, { templateIds, lastChange: "Undo" });
+  assert.equal(restored.draft.designTokens, null);
 });
 
 test("replaces imported products as one reversible draft change", () => {

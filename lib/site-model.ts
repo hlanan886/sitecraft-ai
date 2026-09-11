@@ -1,4 +1,4 @@
-import { templateCatalog } from "@/lib/template-catalog";
+import { templateCatalog } from "./template-catalog.ts";
 import {
   cloneDraft,
   defaultDraft,
@@ -11,7 +11,7 @@ import {
   type Product,
   type SectionKey,
   type SiteDraft,
-} from "@/lib/site-document";
+} from "./site-document.ts";
 
 export type TemplateCategory = "制造业" | "外贸目录" | "科技企业" | "专业服务";
 export type TemplateTargetKey =
@@ -34,10 +34,15 @@ export type Template = {
   colors: { primary: string; secondary: string; accent: string };
   headline: string;
   subtitle: string;
+  /**
+   * 站点形态：corporate 企业官网（默认）/ portfolio 个人作品集 / blog 博客内容站。
+   * 显式标注避免用能力词正则推导误伤企业模板（如 blog 能力词命中含"内容/知识"的企业模板）。
+   */
+  shape?: "corporate" | "portfolio" | "blog";
   source: {
     name: string;
     repoUrl: string;
-    license: "MIT";
+    license: "MIT" | "Internal";
     framework: string;
     demoUrl: string;
     localPath: string;
@@ -75,6 +80,8 @@ export function importProductsFromRows(
       errors.push(`第 ${index + 2} 行缺少 SKU 或产品名称`);
       return;
     }
+    // 图片列：图片/图片URL/主图/image → 主图 URL（本地 /api/product-images/ 或完整 URL）
+    const imageRaw = normalized.image || normalized["图片"] || normalized["图片url"] || normalized["主图"] || normalized["图片地址"] || "";
     const product: Product = {
       sku,
       name: { zh: name, en: normalized["name en"] || normalized["英文名称"] || name },
@@ -85,6 +92,7 @@ export function importProductsFromRows(
       category: normalized.category || normalized["分类"] || "未分类",
       status: "draft",
       imageColor: "#e6eee5",
+      ...(imageRaw ? { image: imageRaw } : {}),
       aiGenerated: !normalized.summary,
     };
     const existing = next.products.findIndex((item) => item.sku === sku);

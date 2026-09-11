@@ -46,3 +46,21 @@
 [submodule "vendor/open-source-templates/yukina"]
 	path = vendor/open-source-templates/yukina
 	url = https://github.com/WhitePaper233/yukina.git
+[submodule "vendor/open-source-templates/fresh"]
+	path = vendor/open-source-templates/fresh
+	url = https://github.com/cssninjaStudio/fresh.git
+[submodule "vendor/open-source-templates/shadcn-landing"]
+	path = vendor/open-source-templates/shadcn-landing
+	url = https://github.com/leoMirandaa/shadcn-landing-page.git
+[submodule "vendor/open-source-templates/screwfast"]
+	path = vendor/open-source-templates/screwfast
+	url = https://github.com/mearashadowfax/ScrewFast.git
+[submodule "vendor/open-source-templates/tailwind-landing"]
+	path = vendor/open-source-templates/tailwind-landing
+	url = https://github.com/tailwindtoolbox/Landing-Page.git
+[submodule "vendor/open-source-templates/shadcn-landing2"]
+	path = vendor/open-source-templates/shadcn-landing2
+	url = https://github.com/nobruf/shadcn-landing-page.git
+[submodule "vendor/open-source-templates/nextjs-landing"]
+	path = vendor/open-source-templates/nextjs-landing
+	url = https://github.com/ixartz/Next-JS-Landing-Page-Starter-Template.git

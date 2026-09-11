@@ -1,0 +1,68 @@
+import type { TemplateManifest } from "./types.ts";
+import { ALL_UI_SURFACES, BOTH_LOCALES, NON_CONTENT_SLOTS, contentSlots } from "./shared.ts";
+
+export const atlasManifest: TemplateManifest = {
+  templateId: "atlas",
+  displayName: "ASTROPLATE / Business",
+  manifestVersion: 1,
+  runtime: "astro-static",
+  nativeLocales: ["en"],
+  outputLocales: BOTH_LOCALES,
+  localizedUi: ALL_UI_SURFACES,
+  requiredVisibleTargets: ["heroTitle"],
+  slots: contentSlots({
+      "hero.title": ["The Ultimate Starter Template You Need To Start Your Astro Project"],
+    }),
+  nonContentSlots: NON_CONTENT_SLOTS,
+  presentation: [
+    {
+      slot: "hero",
+      role: "hero_centered",
+      presentAs: "首屏：居中大标题（text-h1）+ 一句说明 + 主按钮 + 底部整宽 banner 大图。标题用一句话产品/能力主张，说明两句内。",
+      capacity: { max: 1 },
+      itemShape: "title_body",
+      anchor: "main 首 section（lg:col-7 md:col-9 text-center 内 h1）",
+    },
+    {
+      slot: "features",
+      role: "split_text_media",
+      presentAs: "核心能力：原生第 1 组图文分栏（图列 + md:col-7 的 h2+p 简介+勾选列 ul>li>(svg+span) 短句）。features.title/intro 入 h2/p，每条 features.items.title 入勾选 span；原生 6 点容量，≤6 条正好填满，勿加卡。",
+      capacity: { min: 2, default: 6, max: 6 },
+      itemShape: "title_body",
+      anchor: "含 h2+img+ul>li>span 的第 1 个 section-sm 分栏（What's Included… demo 区）",
+    },
+    {
+      slot: "services",
+      role: "split_text_media",
+      presentAs: "服务能力：原生第 2 组图文分栏（图列 + 镜像文本列 h2+p+勾选列 li>svg+span）。services.title/intro 入 h2/p，services.items.title 入勾选 span；原生 3 点容量，写 ≤3 条具体服务短句。",
+      capacity: { min: 2, default: 3, max: 3 },
+      itemShape: "title_body",
+      anchor: "含 h2+img+ul>li>span 的第 2 个 section-sm 分栏（Discover the Key Features… demo 区）",
+    },
+    {
+      slot: "products",
+      role: "product_grid",
+      presentAs: "产品中心：无原生产品卡位，由通用产品网格承载（带图 6 卡，SKU+简介）。",
+      capacity: { min: 1, default: 6, max: 1000 },
+      itemShape: "title_body",
+      anchor: "通用生成产品网格",
+    },
+    {
+      slot: "about",
+      role: "split_text_media",
+      presentAs: "关于板块：无原生关于区，由通用生成区承载（标题 + 一段企业介绍正文）。",
+      capacity: { max: 1 },
+      itemShape: "title_body",
+      anchor: "通用生成关于区",
+    },
+    {
+      slot: "contact",
+      role: "split_text_media",
+      presentAs: "联系板块：无原生联系区，由通用生成区承载（标题+正文+邮箱/电话/地址）。",
+      capacity: { max: 1 },
+      itemShape: "title_body",
+      anchor: "通用生成联系区",
+    },
+  ],
+  recommendation: "eligible",
+};

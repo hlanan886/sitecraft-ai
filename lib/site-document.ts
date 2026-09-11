@@ -24,6 +24,8 @@ export const productSchema = z.object({
   category: z.string().max(120),
   status: z.enum(["published", "draft"]),
   imageColor: z.string().max(30),
+  /** 主图 URL（本地 uploads 路径或完整 URL）；无图时渲染退回 imageColor 色块。 */
+  image: z.string().max(2000).optional(),
   aiGenerated: z.boolean().optional(),
 });
 export type Product = z.infer<typeof productSchema>;
@@ -37,6 +39,21 @@ export const sectionKeys = [
 ] as const;
 export const sectionKeySchema = z.enum(sectionKeys);
 export type SectionKey = z.infer<typeof sectionKeySchema>;
+
+/** 站点形态：企业官网 / 个人作品集 / 博客内容站。决定语义别名与生成/渲染取舍。 */
+export const siteModels = ["corporate", "portfolio", "blog"] as const;
+export const siteModelSchema = z.enum(siteModels);
+export type SiteModel = (typeof siteModels)[number];
+
+export const designTokensSchema = z.object({
+  primary: z.string().regex(/^#[0-9a-f]{6}$/i),
+  secondary: z.string().regex(/^#[0-9a-f]{6}$/i),
+  accent: z.string().regex(/^#[0-9a-f]{6}$/i),
+  fontStyle: z.enum(["sans", "editorial", "technical"]),
+  radius: z.enum(["sharp", "soft", "rounded"]),
+  density: z.enum(["compact", "balanced", "spacious"]),
+});
+export type DesignTokens = z.infer<typeof designTokensSchema>;
 
 const contentSectionSchema = z.object({
   title: localizedTextSchema,
@@ -54,6 +71,8 @@ export const siteDraftSchema = z.object({
   lastChange: z.string().max(240),
   industry: z.string().max(120),
   goal: z.string().max(500),
+  /** 站点形态：corporate 企业官网（默认）/ portfolio 个人作品集 / blog 博客内容站。 */
+  siteModel: siteModelSchema.default("corporate"),
   navigation: z.object({
     about: localizedTextSchema,
     features: localizedTextSchema,
@@ -87,6 +106,7 @@ export const siteDraftSchema = z.object({
   }),
   sectionOrder: z.array(sectionKeySchema).length(sectionKeys.length),
   hiddenSections: z.array(sectionKeySchema),
+  designTokens: designTokensSchema.nullable().default(null),
   products: z.array(productSchema).max(1000),
   supportConfig: z.object({
     enabled: z.boolean(),
@@ -141,6 +161,7 @@ export const defaultDraft: SiteDraft = {
   lastChange: "草稿已保存",
   industry: "工业制造",
   goal: "展示核心产品与工程能力，获取全球客户询盘",
+  siteModel: "corporate",
   navigation: {
     about: { zh: "关于", en: "About" },
     features: { zh: "优势", en: "Advantages" },
@@ -196,6 +217,7 @@ export const defaultDraft: SiteDraft = {
   },
   sectionOrder: ["about", "features", "services", "products", "contact"],
   hiddenSections: [],
+  designTokens: null,
   products: starterProducts,
   supportConfig: { enabled: false, knowledgeSourceIds: [] },
 };

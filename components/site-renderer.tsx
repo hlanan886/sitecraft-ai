@@ -28,6 +28,10 @@ type SiteRendererProps = {
   onSubmitLead?: (event: FormEvent<HTMLFormElement>) => void;
   onLocaleChange?: (locale: Locale) => void;
   submitted?: boolean;
+  submitting?: boolean;
+  submitError?: string | null;
+  highlightSection?: string | null;
+  highlightMode?: "show" | "hide" | null;
 };
 
 const copy = {
@@ -87,18 +91,25 @@ export function SiteRenderer({
   onSubmitLead,
   onLocaleChange,
   submitted = false,
+  submitting = false,
+  submitError = null,
+  highlightSection = null,
+  highlightMode = null,
 }: SiteRendererProps) {
   const template = getTemplate(draft.templateId);
   const text = copy[locale];
   const headline = draft.content.hero.title[locale];
   const subtitle = draft.content.hero.subtitle[locale];
   const visibleProducts = mode === "thumbnail" ? draft.products.slice(0, 3) : draft.products;
+  const hiddenSections = new Set<string>(draft.hiddenSections);
   const select = (label: string, prompt: string) => () =>
     onSelectTarget?.(label, prompt);
   const style = {
-    "--site-primary": template.colors.primary,
-    "--site-secondary": template.colors.secondary,
-    "--site-accent": template.colors.accent,
+    "--site-primary": draft.designTokens?.primary ?? template.colors.primary,
+    "--site-secondary": draft.designTokens?.secondary ?? template.colors.secondary,
+    "--site-accent": draft.designTokens?.accent ?? template.colors.accent,
+    "--rs-custom-radius": draft.designTokens?.radius === "sharp" ? "2px" : draft.designTokens?.radius === "rounded" ? "18px" : "8px",
+    "--rs-density-scale": draft.designTokens?.density === "compact" ? ".78" : draft.designTokens?.density === "spacious" ? "1.18" : "1",
   } as CSSProperties;
 
   return (
@@ -107,6 +118,11 @@ export function SiteRenderer({
       style={style}
       data-template={template.id}
       data-template-name={template.name}
+      data-font-style={draft.designTokens?.fontStyle ?? "template"}
+      data-radius={draft.designTokens?.radius ?? "template"}
+      data-density={draft.designTokens?.density ?? "template"}
+      data-highlight-section={highlightSection ?? undefined}
+      data-highlight-mode={highlightMode ?? undefined}
     >
       <header className="rs-header">
         <a className="rs-logo" href="#top" aria-label={`${draft.companyName} 首页`}>
@@ -114,10 +130,10 @@ export function SiteRenderer({
           <strong>{draft.companyName}</strong>
         </a>
         <nav aria-label={locale === "zh" ? "站点导航" : "Site navigation"}>
-          <a href="#about">{draft.navigation.about[locale]}</a>
-          <a href="#services">{draft.navigation.services[locale]}</a>
-          <a href="#products">{draft.navigation.products[locale]}</a>
-          <a href="#contact">{draft.navigation.contact[locale]}</a>
+          {!hiddenSections.has("about") && <a href="#about">{draft.navigation.about[locale]}</a>}
+          {!hiddenSections.has("services") && <a href="#services">{draft.navigation.services[locale]}</a>}
+          {!hiddenSections.has("products") && <a href="#products">{draft.navigation.products[locale]}</a>}
+          {!hiddenSections.has("contact") && <a href="#contact">{draft.navigation.contact[locale]}</a>}
         </nav>
         <div className="rs-header-actions">
           {onLocaleChange && (
@@ -138,13 +154,15 @@ export function SiteRenderer({
               </button>
             </div>
           )}
-          <button
-            className="rs-button rs-button-small"
-            type="button"
-            onClick={select("导航联系按钮", "优化导航栏联系按钮和转化文案")}
-          >
-            {text.contact} <ArrowUpRight size={13} />
-          </button>
+          {!hiddenSections.has("contact") && (
+            <button
+              className="rs-button rs-button-small"
+              type="button"
+              onClick={select("导航联系按钮", "优化导航栏联系按钮和转化文案")}
+            >
+              {text.contact} <ArrowUpRight size={13} />
+            </button>
+          )}
         </div>
       </header>
 
@@ -207,14 +225,16 @@ export function SiteRenderer({
           </div>
         </section>
 
-        <section className="rs-trust-strip" aria-label="关键能力">
-          <span><Zap size={14} /> RESPONSIVE DELIVERY</span>
-          <span><ShieldCheck size={14} /> QUALITY SYSTEM</span>
-          <span><Globe2 size={14} /> GLOBAL SERVICE</span>
-          <span><Sparkles size={14} /> AI READY</span>
-        </section>
+        {!hiddenSections.has("features") && (
+          <section className="rs-trust-strip" aria-label="关键能力" data-preview-section="features">
+            <span><Zap size={14} /> RESPONSIVE DELIVERY</span>
+            <span><ShieldCheck size={14} /> QUALITY SYSTEM</span>
+            <span><Globe2 size={14} /> GLOBAL SERVICE</span>
+            <span><Sparkles size={14} /> AI READY</span>
+          </section>
+        )}
 
-        <section id="about" className="rs-about">
+        {!hiddenSections.has("about") && <section id="about" className="rs-about" data-preview-section="about">
           <div className="rs-section-label">01 / {text.eyebrow}</div>
           <div className="rs-about-copy">
             <h2>{draft.content.about.title[locale]}</h2>
@@ -224,9 +244,9 @@ export function SiteRenderer({
             <strong>24/7</strong>
             <span>{locale === "zh" ? "持续响应" : "Continuous response"}</span>
           </div>
-        </section>
+        </section>}
 
-        <section id="products" className="rs-products">
+        {!hiddenSections.has("products") && <section id="products" className="rs-products" data-preview-section="products">
           <div className="rs-section-heading">
             <div>
               <div className="rs-section-label">02 / CATALOG</div>
@@ -261,9 +281,9 @@ export function SiteRenderer({
               </button>
             ))}
           </div>
-        </section>
+        </section>}
 
-        <section id="services" className="rs-services">
+        {!hiddenSections.has("services") && <section id="services" className="rs-services" data-preview-section="services">
           <div className="rs-section-label">03 / PROCESS</div>
           <h2>{draft.content.services.title[locale]}</h2>
           <div className="rs-service-grid">
@@ -275,9 +295,9 @@ export function SiteRenderer({
               </article>
             ))}
           </div>
-        </section>
+        </section>}
 
-        <section id="contact" className="rs-contact">
+        {!hiddenSections.has("contact") && <section id="contact" className="rs-contact" data-preview-section="contact">
           <div className="rs-contact-copy">
             <div className="rs-section-label">04 / {text.contactEyebrow}</div>
             <h2>{draft.content.contact.title[locale]}</h2>
@@ -304,18 +324,19 @@ export function SiteRenderer({
                 <label>{text.company}<input name="company" /></label>
                 <label>{text.message}<textarea name="message" rows={4} required /></label>
                 <input className="honeypot" name="website" tabIndex={-1} autoComplete="off" />
-                <button className="rs-button" type="submit">
-                  {text.send} <Send size={14} />
+                {submitError ? <div className="rs-submit-error" role="alert">{submitError}</div> : null}
+                <button className="rs-button" type="submit" disabled={submitting}>
+                  {submitting ? (locale === "zh" ? "提交中…" : "Sending…") : text.send} <Send size={14} />
                 </button>
               </>
             )}
           </form>
-        </section>
+        </section>}
       </main>
 
       <footer className="rs-footer">
         <strong>{draft.companyName}</strong>
-        <span>{template.name} / OPEN SOURCE {template.source.license}</span>
+        <span>{template.id === "canvas" ? "SITECRAFT / CONTROLLED CANVAS" : `${template.name} / OPEN SOURCE ${template.source.license}`}</span>
         <span>© 2026</span>
       </footer>
     </div>

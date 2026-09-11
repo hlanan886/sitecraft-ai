@@ -39,6 +39,7 @@ export type SelfEvalResult = {
 };
 
 export type SelfEvalArgs = {
+  signal?: AbortSignal;
   message: string;
   summary: string;
   operations: SiteOperation[];
@@ -117,6 +118,8 @@ function opModule(op: SiteOperation): string | null {
       return op.section;
     case "set_template":
       return "template";
+    case "set_design_tokens":
+      return "design";
     case "reorder_sections":
       return "structure";
     case "replace_products":
@@ -129,6 +132,15 @@ function opModule(op: SiteOperation): string | null {
 }
 
 function evalProviderConfig() {
+  // 与 ai-provider 保持同一 provider 选择（deepseek 默认 / gpt 可选），避免两处逻辑分叉。
+  const providerName = process.env.SITECRAFT_AI_PROVIDER === "gpt" ? "gpt" : "deepseek";
+  if (providerName === "gpt") {
+    return {
+      baseURL: (process.env.GPT_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, ""),
+      apiKey: process.env.GPT_API_KEY,
+      model: process.env.GPT_MODEL,
+    };
+  }
   return {
     baseURL: (process.env.DEEPSEEK_BASE_URL || process.env.AI_BASE_URL || "https://api.deepseek.com").replace(/\/$/, ""),
     apiKey: process.env.DEEPSEEK_API_KEY || process.env.AI_API_KEY,
@@ -183,7 +195,9 @@ export async function evaluateOperations(args: SelfEvalArgs): Promise<SelfEvalRe
           },
         ],
       }),
-      signal: AbortSignal.timeout(30_000),
+      signal: args.signal
+        ? AbortSignal.any([args.signal, AbortSignal.timeout(30_000)])
+        : AbortSignal.timeout(30_000),
       cache: "no-store",
     });
     if (!response.ok) {

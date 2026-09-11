@@ -1,5 +1,7 @@
 import type { SiteDraft } from "./site-document.ts";
 import type { SiteOperation } from "./site-operations.ts";
+import type { Locale } from "./site-document.ts";
+import { getTemplateManifest, getTemplatePresentation } from "./template-manifest.ts";
 
 const metadataTextTargets = new Set(["siteName", "industry", "goal"]);
 const nonLocalizedTextTargets = new Set([
@@ -16,11 +18,127 @@ export type TemplateSlotPreflight = {
   nonVisualTargets: string[];
 };
 
+export type TemplateCapabilitySummary = {
+  templateId: string;
+  manifestVersion: number;
+  locales: readonly Locale[];
+  editableSlots: string[];
+  requiredSlots: string[];
+  nonContentSlots: string[];
+  slotConstraints: Array<{
+    target: string;
+    semanticType: string;
+    locales: readonly Locale[];
+    maxLength: number;
+    required: boolean;
+    editable: boolean;
+  }>;
+  /**
+   * 每业务槽在该模板的原生排版（role/capacity）。生成层据此按模板"能装几条、长什么样"
+   * 组织内容，而不是为凑满通用槽位写一堆卡片。
+   * 例：features=原生icon行,建议4条,max6。
+   */
+  presentation: Array<{
+    slot: string;
+    role: string;
+    presentAs: string;
+    capacityDefault?: number;
+    capacityMax: number;
+    itemShape: string;
+    hideUnlessFilled?: boolean;
+  }>;
+};
+
+export function buildTemplateCapabilitySummary(templateId: string, locale: Locale): TemplateCapabilitySummary {
+  const manifest = getTemplateManifest(templateId);
+  if (!manifest) {
+    return {
+      templateId,
+      manifestVersion: 0,
+      locales: [locale],
+      editableSlots: [],
+      requiredSlots: [],
+      nonContentSlots: [],
+      slotConstraints: [],
+      presentation: [],
+    };
+  }
+  return {
+    templateId,
+    manifestVersion: manifest.manifestVersion,
+    locales: manifest.outputLocales,
+    editableSlots: manifest.slots
+      .filter((slot) => slot.editable && slot.locales.includes(locale))
+      .map((slot) => slot.target),
+    requiredSlots: manifest.slots.filter((slot) => slot.required).map((slot) => slot.target),
+    nonContentSlots: manifest.nonContentSlots.map((slot) => slot.target),
+    slotConstraints: manifest.slots.map((slot) => ({
+      target: slot.target,
+      semanticType: slot.semanticType,
+      locales: slot.locales,
+      maxLength: slot.maxLength,
+      required: slot.required,
+      editable: slot.editable,
+    })),
+    presentation: getTemplatePresentation(templateId).map((block) => ({
+      slot: block.slot,
+      role: block.role,
+      presentAs: block.presentAs,
+      capacityDefault: block.capacity.default,
+      capacityMax: block.capacity.max,
+      itemShape: block.itemShape,
+      hideUnlessFilled: block.hideUnlessFilled,
+    })),
+  };
+}
+
 export type SelectedTargetConformance = {
   enforced: boolean;
   matches: boolean;
   operationTargets: string[];
 };
+
+/** Slots that the local SiteRenderer actually renders and can visibly update. */
+export function buildLocalPreviewSlots(draft: SiteDraft) {
+  const slots = [
+    "companyName.zh",
+    "industry.zh",
+    ...(["zh", "en"] as const).flatMap((locale) => [
+      `navigation.about.${locale}`,
+      `navigation.services.${locale}`,
+      `navigation.products.${locale}`,
+      `navigation.contact.${locale}`,
+      `hero.title.${locale}`,
+      `hero.subtitle.${locale}`,
+      `hero.cta.${locale}`,
+      `about.title.${locale}`,
+      `about.body.${locale}`,
+      `services.title.${locale}`,
+      `products.title.${locale}`,
+      `contact.title.${locale}`,
+      `contact.body.${locale}`,
+      `contact.address.${locale}`,
+    ]),
+    "contact.email.zh",
+    "about.visibility",
+    "features.visibility",
+    "services.visibility",
+    "products.visibility",
+    "contact.visibility",
+  ];
+  draft.content.services.items.forEach((_, index) => {
+    (["zh", "en"] as const).forEach((locale) => {
+      slots.push(`services.items.${index}.title.${locale}`, `services.items.${index}.body.${locale}`);
+    });
+  });
+  draft.products.forEach((product) => {
+    (["zh", "en"] as const).forEach((locale) => {
+      slots.push(`products.${product.sku}.name.${locale}`, `products.${product.sku}.summary.${locale}`);
+    });
+    slots.push(`products.${product.sku}.category`);
+  });
+  return slots;
+}
 
 function canonicalSlot(value: string) {
   return value.replace(/\.(zh|en)$/, ".$locale");
@@ -44,9 +162,13 @@ function textOperationTarget(operation: Extract<SiteOperation, { op: "set_text" 
 export function operationDisplayTargets(operation: SiteOperation, draft: SiteDraft): string[] {
   if (operation.op === "set_text") return [textOperationTarget(operation)];
   if (operation.op === "update_card") {
+    const resolvedIndex = operation.itemId
+      ? draft.content[operation.section].items.findIndex((item) => item.id === operation.itemId)
+      : operation.index;
+    const index = resolvedIndex >= 0 ? resolvedIndex : operation.index;
     return [
-      operation.title ? `${operation.section}.items.${operation.index}.title.${operation.locale}` : null,
-      operation.body ? `${operation.section}.items.${operation.index}.body.${operation.locale}` : null,
+      operation.title ? `${operation.section}.items.${index}.title.${operation.locale}` : null,
+      operation.body ? `${operation.section}.items.${index}.body.${operation.locale}` : null,
     ].filter((target): target is string => Boolean(target));
   }
   if (operation.op === "add_card") {
@@ -94,6 +216,46 @@ function targetsAreRelated(selectedTarget: string, operationTarget: string) {
   return selectedTarget === operationTarget
     || selectedTarget.startsWith(`${operationTarget}.`)
     || operationTarget.startsWith(`${selectedTarget}.`);
+}
+
+export type OperationTargetResolution = {
+  targetId: string;
+  confidence: "exact" | "ambiguous" | "missing";
+};
+
+/** 将预览的精确路径或卡片 itemId 解析为当前草稿位置；不唯一时拒绝猜测。 */
+export function resolveOperationTarget(draft: SiteDraft, reference: string): OperationTargetResolution {
+  const normalized = reference.trim();
+  if (isConcreteSelectedTarget(normalized)) return { targetId: normalized, confidence: "exact" };
+  const itemReference = normalized.match(/^(?:features|services)\.items\.(.+)$/)?.[1] ?? normalized;
+  const matches = (["features", "services"] as const).flatMap((section) => {
+    const index = draft.content[section].items.findIndex((item) => item.id === itemReference);
+    return index >= 0 ? [`${section}.items.${index}`] : [];
+  });
+  if (matches.length === 1) return { targetId: matches[0], confidence: "exact" };
+  if (matches.length > 1) return { targetId: normalized, confidence: "ambiguous" };
+  return { targetId: normalized, confidence: "missing" };
+}
+
+export type OperationScopeValidation = {
+  allowed: boolean;
+  operationTargets: string[];
+  reason?: string;
+};
+
+export function validateOperationScope(
+  operation: SiteOperation,
+  context: { message: string; selectedTarget?: string | null; draft: SiteDraft },
+): OperationScopeValidation {
+  const operationTargets = operationDisplayTargets(operation, context.draft);
+  const enforced = shouldEnforceSelectedTarget(context.message, context.selectedTarget);
+  if (!enforced || !context.selectedTarget) return { allowed: true, operationTargets };
+  const allowed = operationTargets.length > 0 && operationTargets.every((target) => targetsAreRelated(context.selectedTarget!, target));
+  return {
+    allowed,
+    operationTargets,
+    ...(allowed ? {} : { reason: `操作目标超出用户选中的 ${context.selectedTarget}` }),
+  };
 }
 
 /**
@@ -176,3 +338,45 @@ export function unsupportedTemplateSlotMessage(templateName: string, targets: st
 }
 
 export const nonVisualTemplateNotice = "项目资料已保存；这类信息不属于当前模板页面内容，因此网站预览不会变化。";
+export type TemplateSlotReportInput = {
+  requiredTargets: readonly string[];
+  appliedSlots: readonly string[];
+  visibleSlots: readonly string[];
+};
+
+export type TemplateSlotReport = {
+  appliedSlots: string[];
+  visibleSlots: string[];
+  missingSlots: string[];
+  incompatible: boolean;
+};
+
+const TARGET_SLOT_PREFIXES: Readonly<Record<string, readonly string[]>> = {
+  brand: ["brand"],
+  heroTitle: ["hero.title"],
+  heroSubtitle: ["hero.subtitle"],
+  primaryCta: ["hero.cta"],
+  about: ["about"],
+  features: ["features"],
+  services: ["services"],
+  products: ["products"],
+  contact: ["contact"],
+};
+
+function slotMatchesTarget(slot: string, target: string) {
+  const prefixes = TARGET_SLOT_PREFIXES[target] ?? [target];
+  return prefixes.some((prefix) => slot === prefix || slot.startsWith(prefix + "."));
+}
+
+export function evaluateTemplateSlotReport(input: TemplateSlotReportInput): TemplateSlotReport {
+  const visibleSlots = [...new Set(input.visibleSlots)];
+  const missingSlots = [...new Set(input.requiredTargets)].filter(
+    (target) => !visibleSlots.some((slot) => slotMatchesTarget(slot, target)),
+  );
+  return {
+    appliedSlots: [...new Set(input.appliedSlots)],
+    visibleSlots,
+    missingSlots,
+    incompatible: missingSlots.length > 0,
+  };
+}

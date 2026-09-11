@@ -1,7 +1,17 @@
 import { z } from "zod";
+import { accessErrorResponse, authorizeRequest } from "@/lib/request-context";
 import { requestStructuredOperations } from "@/lib/ai-provider";
-import { describeDestructive, isDestructiveOperation } from "@/lib/site-operations";
-import { commitOperations, getSite, snapshot } from "@/lib/site-store";
+import { executeChatTaskPlan } from "@/lib/chat-task-executor";
+import { planChatTasks } from "@/lib/chat-task-planner";
+import { createGenerationDeadlines } from "@/lib/generation-budget";
+import { describeDestructive, isDestructiveOperation, OperationPreconditionError } from "@/lib/site-operations";
+import {
+  commitOperations,
+  getSite,
+  isConversationalUndoMessage,
+  snapshot,
+  undoLatestAiChange,
+} from "@/lib/site-store";
 import {
   getOrCreateSession,
   isUnresolvableReferential,
@@ -13,16 +23,16 @@ import {
   sweepExpiredSessions,
   type ChatSession,
 } from "@/lib/ai-session";
-import {
-  evaluateOperations,
-  selectRetryIssues,
-  shouldSelfEvaluate,
-} from "@/lib/ai-self-eval";
 import { getTemplate } from "@/lib/site-model";
+import { createGenerationProvenance } from "@/lib/generation-record";
+import { hashRequestPayload, requestIdempotency } from "@/lib/request-idempotency";
+import { buildSseReplayResponse, SSE_HEADERS } from "@/lib/sse-response";
 import {
   checkSelectedTargetConformance,
+  buildTemplateCapabilitySummary,
   nonVisualTemplateNotice,
   preflightTemplateSlots,
+  validateOperationScope,
   selectedTargetMismatchMessage,
   unsupportedTemplateSlotMessage,
 } from "@/lib/template-slot-guard";
@@ -48,23 +58,88 @@ const chatSchema = z.object({
     revision: z.number().int().nonnegative(),
     slots: z.array(z.string().min(1).max(180)).max(3000),
   }).optional(),
+  idempotencyKey: z.string().trim().min(1).max(128).optional(),
 });
 
+type EventMeta = {
+  requestId: string;
+  taskId: string;
+  sequence: number;
+  revision: number;
+  idempotencyScope?: string;
+  idempotencyKey?: string;
+};
+const eventMeta = new WeakMap<ReadableStreamDefaultController<Uint8Array>, EventMeta>();
+
 function event(controller: ReadableStreamDefaultController<Uint8Array>, value: unknown) {
-  controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(value)}\n\n`));
+  const meta = eventMeta.get(controller);
+  const record = value && typeof value === "object" ? value as Record<string, unknown> : { value };
+  if (!meta) {
+    controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(record)}\n\n`));
+    return;
+  }
+  const nestedDraft = record.draft && typeof record.draft === "object" ? record.draft as Record<string, unknown> : null;
+  const changeSet = record.changeSet && typeof record.changeSet === "object" ? record.changeSet as Record<string, unknown> : null;
+  const revision = typeof nestedDraft?.revision === "number"
+    ? nestedDraft.revision
+    : typeof changeSet?.revision === "number"
+      ? changeSet.revision
+      : meta.revision;
+  meta.revision = revision;
+  const childTaskId = typeof record.taskId === "string" ? record.taskId : undefined;
+  const enriched = {
+    ...record,
+    requestId: meta.requestId,
+    taskId: meta.taskId,
+    sequence: ++meta.sequence,
+    revision,
+    payload: record,
+    ...(childTaskId ? { childTaskId } : {}),
+  };
+  controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(enriched)}\n\n`));
+  if (record.type === "done" && meta.idempotencyScope && meta.idempotencyKey) {
+    requestIdempotency.complete(meta.idempotencyScope, meta.idempotencyKey, enriched);
+  }
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ siteId: string }> }) {
+  const access = authorizeRequest(request, "chat");
+  const denied = accessErrorResponse(access);
+  if (denied) return denied;
   const parsed = chatSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "Invalid chat payload", details: parsed.error.flatten() }, { status: 400 });
   const { siteId } = await params;
-  const current = await getSite(siteId);
+  const idempotencyScope = `chat:${siteId}`;
+  const idempotencyKey = parsed.data.idempotencyKey;
+  if (idempotencyKey) {
+    const decision = requestIdempotency.begin(idempotencyScope, idempotencyKey, hashRequestPayload(parsed.data));
+    if (decision.status === "completed") return buildSseReplayResponse(decision.result);
+    if (decision.status === "key_conflict") return Response.json({ error: "idempotency_key_reused", message: "同一请求标识不能用于不同内容，请重新提交。" }, { status: 409 });
+    if (decision.status === "inflight") {
+      return Response.json({ error: "request_inflight", message: "相同请求正在处理中，请等待当前结果。" }, { status: 409 });
+    }
+  }
+  let current;
+  try {
+    current = await getSite(siteId);
+  } catch (error) {
+    if (idempotencyKey) requestIdempotency.release(idempotencyScope, idempotencyKey);
+    throw error;
+  }
   if (current.draft.revision !== parsed.data.baseRevision) {
+    if (idempotencyKey) requestIdempotency.release(idempotencyScope, idempotencyKey);
     return Response.json({ error: "revision_conflict", message: "草稿已经更新，请刷新后重试。", ...current }, { status: 409 });
   }
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      eventMeta.set(controller, {
+        requestId: crypto.randomUUID(),
+        taskId: crypto.randomUUID(),
+        sequence: 0,
+        revision: parsed.data.baseRevision,
+        ...(idempotencyKey ? { idempotencyScope, idempotencyKey } : {}),
+      });
       // 会话接入（③）：有 sessionId 才走服务端会话记忆，否则退回旧 context 路径（向后兼容）
       let session: ChatSession | null = null;
       let sessionContext: string | undefined;
@@ -76,6 +151,64 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
         });
         pushUserMessage(session, parsed.data.message);
         sessionContext = serializeSessionContext(session);
+      }
+
+      if (isConversationalUndoMessage(parsed.data.message)) {
+        event(controller, { type: "status", value: "正在定位最近一次 AI 修改…" });
+        try {
+          const undone = await undoLatestAiChange({
+            siteId,
+            baseRevision: parsed.data.baseRevision,
+            signal: request.signal,
+          });
+          if (undone.status === "applied") {
+            const summary = `已撤销 AI 修改“${undone.undoneChange.summary}”`;
+            if (session) {
+              recordAppliedChange(session, {
+                revision: undone.changeSet.revision,
+                summary,
+                targets: undone.changeSet.appliedTargets,
+                draft: undone.record.draft,
+              });
+              pushAssistantMessage(session, summary);
+            }
+            event(controller, {
+              type: "done",
+              status: "applied",
+              summary,
+              changeSet: undone.changeSet,
+              undoneChange: undone.undoneChange,
+              ...snapshot(undone.record),
+              attempts: 0,
+            });
+          } else if (undone.status === "unsafe") {
+            const message = `无法安全撤销“${undone.targetChange.summary}”：该 AI 修改之后还有 ${undone.laterChanges.length} 项后续修改。为避免覆盖之后的人工或导入内容，本次未修改草稿。`;
+            if (session) pushAssistantMessage(session, message);
+            event(controller, {
+              type: "done",
+              status: "need_clarification",
+              code: "unsafe_conversational_undo",
+              message,
+              targetChange: undone.targetChange,
+              laterChanges: undone.laterChanges,
+              ...snapshot(undone.record),
+              attempts: 0,
+            });
+          } else if (undone.status === "empty" || undone.status === "no_change") {
+            const message = undone.status === "empty"
+              ? "当前草稿没有可撤销的 AI 修改。"
+              : `“${undone.targetChange.summary}”已经没有可恢复的内容差异，草稿未修改。`;
+            if (session) pushAssistantMessage(session, message);
+            event(controller, { type: "done", status: "need_clarification", code: "no_ai_change_to_undo", message, ...snapshot(undone.record), attempts: 0 });
+          } else {
+            if (session) markRevisionDrift(session);
+            event(controller, { type: "done", status: "conflict", error: "草稿在撤销期间已被更新，本次没有覆盖新版本。", ...snapshot(undone.record), attempts: 0 });
+          }
+        } catch (error) {
+          event(controller, { type: "done", status: "error", code: "undo_error", error: error instanceof Error ? error.message : "撤销 AI 修改失败" });
+        }
+        controller.close();
+        return;
       }
 
       // P2 保护：无历史可依的指代请求（"刚才改的标题"但本会话从没改过）→ 不调模型，直接澄清
@@ -95,14 +228,44 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
         return;
       }
 
-      event(controller, { type: "status", value: "正在调用模型并生成结构化操作…" });
-      const provider = await requestStructuredOperations({
-        message: parsed.data.message,
-        draft: current.draft,
-        templateId: current.draft.templateId,
-        selectedTarget: parsed.data.selectedTarget,
-        context: parsed.data.context,
-        sessionContext,
+      const { workDeadlineAt } = createGenerationDeadlines(Date.now());
+      const tasks = planChatTasks(parsed.data.message, parsed.data.selectedTarget);
+      event(controller, { type: "status", value: `已拆分为 ${tasks.length} 项修改，正在并行处理…`, totalTasks: tasks.length });
+      const provider = await executeChatTaskPlan({
+        tasks,
+        deadlineAt: workDeadlineAt,
+        signal: request.signal,
+        maxConcurrency: 2,
+        runTask: async (task) => {
+          event(controller, {
+            type: "status",
+            value: `正在处理：${task.instruction.slice(0, 60)}`,
+            taskId: task.id,
+            taskStatus: "generating",
+            scopes: task.scopes,
+          });
+          const result = await requestStructuredOperations({
+            message: task.instruction,
+            draft: current.draft,
+            templateId: current.draft.templateId,
+            selectedTarget: task.selectedTarget,
+            context: parsed.data.context,
+            sessionContext,
+            scope: { sections: task.scopes, productSkus: task.productSkus },
+            maxAttempts: 1,
+            maxTokens: 2_200,
+            deadlineAt: workDeadlineAt,
+            signal: request.signal,
+          });
+          event(controller, {
+            type: "status",
+            value: result.ok ? "子任务已完成" : result.code === "output_truncated" ? "输出较长，正在拆分处理…" : "子任务失败",
+            taskId: task.id,
+            taskStatus: result.ok ? "completed" : result.code === "output_truncated" ? "splitting" : "failed",
+            scopes: task.scopes,
+          });
+          return result;
+        },
       });
       if (!provider.ok) {
         if (provider.code === "selected_target_mismatch" && parsed.data.selectedTarget) {
@@ -124,65 +287,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
         controller.close();
         return;
       }
-      // 破坏性操作确认：含删除/隐藏/换模板/重排且用户未确认 → 暂停，等确认
-      const destructiveOps = provider.operations.filter(isDestructiveOperation);
-      if (destructiveOps.length && !parsed.data.confirmedDestructive) {
-        event(controller, {
-          type: "done",
-          status: "need_confirmation",
-          summary: provider.summary,
-          destructive: destructiveOps.map(describeDestructive),
-          model: provider.model,
-          latencyMs: provider.latencyMs,
-          attempts: provider.attemptCount,
-        });
-        controller.close();
-        return;
-      }
-      // 模型自评（① 做轻）：仅大改动时触发；不通过 → 带 feedback 重生成 1 次
-      let finalProvider = provider;
-      let selfEvaluated = false;
-      let evalIssues: string[] = [];
-      if (shouldSelfEvaluate(provider.operations, parsed.data.message)) {
-        selfEvaluated = true;
-        event(controller, { type: "status", value: "正在质检本次修改…" });
-        const evalRes = await evaluateOperations({
-          message: parsed.data.message,
-          summary: provider.summary,
-          operations: provider.operations,
-          selectedTarget: parsed.data.selectedTarget,
-          contextBlock: sessionContext,
-          templateId: current.draft.templateId,
-        });
-        if (!evalRes.ok) {
-          const feedback = selectRetryIssues(evalRes.issues);
-          evalIssues = evalRes.issues.filter((i) => i.severity === "error").map((i) => `[${i.code}] ${i.message}`);
-          if (feedback) {
-            const retry = await requestStructuredOperations({
-              message: parsed.data.message,
-              draft: current.draft,
-              templateId: current.draft.templateId,
-              selectedTarget: parsed.data.selectedTarget,
-              context: parsed.data.context,
-              sessionContext,
-              feedback,
-            });
-            if (retry.ok) {
-              finalProvider = retry;
-            } else {
-              // H3：重生成失败时记录日志（fail-open 用原 provider），便于排查
-              console.error(`[ai-self-eval] 重生成失败，使用原操作提交: ${retry.error}`);
-            }
-          }
-        }
-      }
+      const finalProvider = provider;
+      const selfEvaluated = false;
+      const evalIssues: string[] = [];
+      const scopeViolation = parsed.data.selectedTarget
+        ? finalProvider.operations.find((operation) => !validateOperationScope(operation, {
+            message: parsed.data.message,
+            selectedTarget: parsed.data.selectedTarget,
+            draft: current.draft,
+          }).allowed)
+        : undefined;
       const selectedTargetConformance = checkSelectedTargetConformance({
         message: parsed.data.message,
         selectedTarget: parsed.data.selectedTarget,
         operations: finalProvider.operations,
         draft: current.draft,
       });
-      if (!selectedTargetConformance.matches && parsed.data.selectedTarget) {
+      if ((!selectedTargetConformance.matches || scopeViolation) && parsed.data.selectedTarget) {
         const message = selectedTargetMismatchMessage(parsed.data.selectedTarget);
         if (session) pushAssistantMessage(session, message);
         event(controller, {
@@ -200,7 +321,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
         controller.close();
         return;
       }
-      // 重生成可能改变破坏性操作 → 重跑确认门（已确认则跳过）
+      // 所有批次聚合成功后只经过这一道破坏性确认门。
       const finalDestructive = finalProvider.operations.filter(isDestructiveOperation);
       if (finalDestructive.length && !parsed.data.confirmedDestructive) {
         event(controller, {
@@ -258,6 +379,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
           source: "ai",
           model: finalProvider.model,
           latencyMs: finalProvider.latencyMs,
+          provenance: {
+            ...createGenerationProvenance({
+              provider: "DeepSeek",
+              model: finalProvider.model,
+              promptKey: "chat_operations",
+              manifestVersion: buildTemplateCapabilitySummary(current.draft.templateId, current.draft.locale).manifestVersion,
+              templateId: current.draft.templateId,
+              buildRevision: parsed.data.baseRevision,
+              inputText: parsed.data.message,
+            }),
+            baseRevision: parsed.data.baseRevision,
+            selectedTarget: parsed.data.selectedTarget ?? null,
+          },
         });
         if (committed.status === "conflict") {
           if (session) markRevisionDrift(session);
@@ -292,10 +426,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ sit
           });
         }
       } catch (error) {
-        event(controller, { type: "done", status: "error", code: "operation_error", error: error instanceof Error ? error.message : "操作应用失败" });
+        if (error instanceof OperationPreconditionError) {
+          event(controller, {
+            type: "done",
+            status: "conflict",
+            code: error.code,
+            error: error.message,
+            ...current,
+            attempts: finalProvider.attemptCount,
+          });
+        } else {
+          event(controller, { type: "done", status: "error", code: "operation_error", error: error instanceof Error ? error.message : "操作应用失败" });
+        }
       }
       controller.close();
     },
   });
-  return new Response(stream, { headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-store", Connection: "keep-alive" } });
+  return new Response(stream, { headers: SSE_HEADERS });
 }

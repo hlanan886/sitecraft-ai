@@ -1,3 +1,4 @@
+import type { ChatScope } from "./chat-task-planner.ts";
 import type { SiteDraft } from "./site-document";
 
 /**
@@ -7,7 +8,60 @@ import type { SiteDraft } from "./site-document";
  */
 const PRODUCT_INDEX_LIMIT = 20;
 
-export function buildDraftIndex(draft: SiteDraft, message: string): string {
+export type DraftIndexScope = {
+  sections: readonly ChatScope[];
+  productSkus: readonly string[];
+};
+
+const contentKeys = ["hero", "about", "features", "services", "products", "contact"] as const;
+type ContentKey = (typeof contentKeys)[number];
+
+function isContentKey(value: ChatScope): value is ContentKey {
+  return contentKeys.includes(value as ContentKey);
+}
+
+function buildScopedDraftIndex(draft: SiteDraft, message: string, scope: DraftIndexScope): string {
+  const sections = [...new Set(scope.sections.filter(isContentKey))];
+  const sectionSet = new Set<ContentKey>(sections);
+  const mentionedSkus = draft.products
+    .filter((product) => message.includes(product.sku))
+    .map((product) => product.sku);
+  const requestedSkus = new Set([...scope.productSkus, ...mentionedSkus]);
+  const includeProducts = sectionSet.has("products");
+  const products = includeProducts
+    ? requestedSkus.size
+      ? draft.products.filter((product) => requestedSkus.has(product.sku))
+      : draft.products.slice(0, PRODUCT_INDEX_LIMIT)
+    : undefined;
+  const navigation = Object.fromEntries(
+    sections
+      .filter((section): section is Exclude<ContentKey, "hero"> => section !== "hero")
+      .map((section) => [section, draft.navigation[section]]),
+  );
+  const content = Object.fromEntries(sections.map((section) => [section, draft.content[section]]));
+  const orderedSections = draft.sectionOrder.filter((section) => sectionSet.has(section));
+  const hiddenSections = draft.hiddenSections.filter((section) => sectionSet.has(section));
+
+  return JSON.stringify({
+    schemaVersion: draft.schemaVersion,
+    siteName: draft.siteName,
+    companyName: draft.companyName,
+    templateId: draft.templateId,
+    locale: draft.locale,
+    revision: draft.revision,
+    industry: draft.industry,
+    goal: draft.goal,
+    navigation,
+    content,
+    sectionOrder: orderedSections,
+    hiddenSections,
+    designTokens: draft.designTokens,
+    ...(products ? { products } : {}),
+  });
+}
+
+export function buildDraftIndex(draft: SiteDraft, message: string, scope?: DraftIndexScope): string {
+  if (scope) return buildScopedDraftIndex(draft, message, scope);
   const products = draft.products;
   if (products.length <= PRODUCT_INDEX_LIMIT) return JSON.stringify(draft);
   const mentionedSkus = new Set<string>();
