@@ -8,8 +8,19 @@
     "start": "next start",
     "migrate:drafts": "node --experimental-strip-types scripts/migrate-file-drafts.ts",
     "test:three-sites": "node scripts/generate-three-ai-sites.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:real": "node e2e/scripts/run-real.mjs",
+    "e2e:install": "playwright install chromium",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --experimental-strip-types tests/*.test.ts"
+    "test": "node --test --experimental-strip-types tests/*.test.ts",
+    "test:e2e:strict-access": "node scripts/run-strict-access.mjs",
+    "test:e2e:strict": "node scripts/run-strict-e2e.mjs",
+    "templates:mirror:scan": "node scripts/mirror-template-assets.mjs",
+    "templates:mirror": "node scripts/mirror-template-assets.mjs --write",
+    "test:lead-form": "node scripts/probe-lead-form.mjs",
+    "test:side-effects": "node scripts/test-side-effects.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.511.0",
@@ -22,6 +33,7 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^22.15.0",
     "@types/papaparse": "^5.3.16",
     "@types/pg": "^8.23.1",

@@ -1,0 +1,32 @@
+{
+  "HY-M550": {
+    "url": "/api/product-images/hy-m550-11ded0.png",
+    "file": "hy-m550-11ded0.png",
+    "bytes": 1818453
+  },
+  "HY-T580": {
+    "url": "/api/product-images/hy-t580-cf1c21.png",
+    "file": "hy-t580-cf1c21.png",
+    "bytes": 1738920
+  },
+  "HY-DEPC-100": {
+    "url": "/api/product-images/hy-depc-100-b463e8.png",
+    "file": "hy-depc-100-b463e8.png",
+    "bytes": 2389020
+  },
+  "HY-INV-110": {
+    "url": "/api/product-images/hy-inv-110-051963.png",
+    "file": "hy-inv-110-051963.png",
+    "bytes": 1590524
+  },
+  "HY-ESS-200": {
+    "url": "/api/product-images/hy-ess-200-ad4efc.png",
+    "file": "hy-ess-200-ad4efc.png",
+    "bytes": 1931882
+  },
+  "HY-MT-AL": {
+    "url": "/api/product-images/hy-mt-al-70dacf.png",
+    "file": "hy-mt-al-70dacf.png",
+    "bytes": 1815294
+  }
+}

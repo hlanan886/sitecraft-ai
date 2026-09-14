@@ -41,3 +41,26 @@ test("index prioritizes SKUs mentioned in the user message", () => {
   assert.equal(skus.includes("SKU-0024"), true);
   assert.equal(skus.length, 20);
 });
+
+test("scoped index includes only the requested content section", () => {
+  const idx = buildDraftIndex(defaultDraft, "只改首屏标题", { sections: ["hero"], productSkus: [] });
+  const parsed = JSON.parse(idx) as { content: Record<string, unknown>; products?: unknown };
+  assert.deepEqual(Object.keys(parsed.content), ["hero"]);
+  assert.equal(parsed.products, undefined);
+  assert.ok(idx.length <= 12_000);
+});
+
+test("scoped product index keeps an explicitly mentioned SKU and omits unrelated sections", () => {
+  const big = draftWithNProducts(25);
+  const idx = buildDraftIndex(big, "把 SKU-0024 的简介改一下", { sections: ["products"], productSkus: ["SKU-0024"] });
+  const parsed = JSON.parse(idx) as { content: Record<string, unknown>; products: Array<{ sku: string }> };
+  assert.deepEqual(Object.keys(parsed.content), ["products"]);
+  assert.deepEqual(parsed.products.map((product) => product.sku), ["SKU-0024"]);
+});
+
+test("scoped feature index preserves exact card positions", () => {
+  const idx = buildDraftIndex(defaultDraft, "修改第二张优势卡片", { sections: ["features"], productSkus: [] });
+  const parsed = JSON.parse(idx) as { content: { features: { items: Array<{ id: string }> } } };
+  assert.equal(parsed.content.features.items[1].id, defaultDraft.content.features.items[1].id);
+  assert.equal(parsed.content.features.items.length, defaultDraft.content.features.items.length);
+});

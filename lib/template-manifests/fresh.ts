@@ -1,0 +1,71 @@
+import type { TemplateManifest } from "./types.ts";
+import { ALL_UI_SURFACES, BOTH_LOCALES, NON_CONTENT_SLOTS, contentSlots } from "./shared.ts";
+
+export const freshManifest: TemplateManifest = {
+  templateId: "fresh",
+  displayName: "FRESH / SaaS Landing",
+  manifestVersion: 1,
+  runtime: "astro-static",
+  nativeLocales: ["en"],
+  outputLocales: BOTH_LOCALES,
+  localizedUi: ALL_UI_SURFACES,
+  requiredVisibleTargets: ["heroTitle"],
+  slots: contentSlots({
+      "hero.title": ["Manage and deploy your apps seamlessly", "Fresh"],
+    }),
+  nonContentSlots: NON_CONTENT_SLOTS,
+  presentation: [
+    {
+      presentationSlot: "hero",
+      role: "hero_split_image",
+      presentAs: "首屏：Bulma 左右图文分栏（左列 caption：h1 大标题+副文+主 CTA；右列 hero 插画）。标题一句话主张，副文一句范围与交付。",
+      capacity: { max: 1 },
+      itemShape: "title_body",
+      anchor: "section.hero.is-grey.is-fullheight 内 .landing-caption（.column.is-5）",
+    },
+    {
+      presentationSlot: "features",
+      role: "split_text_media",
+      presentAs: "核心优势：原生 3 组交替图文分栏（.columns.is-vcentered.side-feature ×2 + app-side ×1，第 3 组已迁入同 section），每组 图+ h3.title+p.subtitle，图标图保留。建议 3 条正好填满，每条标题简短带要点。",
+      capacity: { min: 2, default: 3, max: 3 },
+      itemShape: "title_body",
+      anchor: "含 .side-feature 的 section（.columns.is-vcentered 内 h3.title+p.subtitle）",
+    },
+    {
+      presentationSlot: "services",
+      role: "icon_row",
+      presentAs: "服务能力：原生 3 张居中 mini icon 卡（.feature-card.is-bordered：icon 图 + h4 标题 + p 正文），卡内 demo CTA 按钮已移除。建议 2-3 条。",
+      capacity: { min: 1, default: 2, max: 3 },
+      itemShape: "title_body",
+      anchor: "title-wrapper 含 Great Power Comes 的 section（.feature-card）",
+    },
+    {
+      presentationSlot: "about",
+      role: "split_text_media",
+      presentAs: "关于：标题 + 一段企业介绍正文（fresh 无原生 about 区，由通用生成区承载）。",
+      nativeFallbackHost: "generated",
+      capacity: { max: 1 },
+      itemShape: "title_body",
+      anchor: "通用生成 about 区",
+    },
+    {
+      presentationSlot: "products",
+      role: "product_grid",
+      presentAs: "产品中心：由通用产品网格承载（SKU+简介+产品图，6 卡带图）。",
+      nativeFallbackHost: "generated",
+      capacity: { min: 1, default: 6, max: 1000 },
+      itemShape: "title_body",
+      anchor: "通用 renderAdditionalProducts 产品网格",
+    },
+    {
+      presentationSlot: "contact",
+      role: "split_text_media",
+      presentAs: "联系板块：标题 + 说明 + 邮箱/电话/地址（fresh 原生表单区为 demo，已移除，由通用联系生成区承载）。",
+      nativeFallbackHost: "generated",
+      capacity: { max: 1 },
+      itemShape: "title_body",
+      anchor: "通用生成联系区",
+    },
+  ],
+  recommendation: "eligible",
+};

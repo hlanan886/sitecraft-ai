@@ -19,8 +19,16 @@ export type RetryOutcome<T> = {
   attemptCount: number;
 };
 
-const MAX_ATTEMPTS = 2;
-const RETRY_BACKOFF_MS = 500;
+const DEFAULT_MAX_ATTEMPTS = 2;
+const DEFAULT_RETRY_BACKOFF_MS = 500;
+
+export type RetryOptions<T> = {
+  isTimeoutError?: (error: unknown) => boolean;
+  maxAttempts?: number;
+  backoffMs?: number;
+  deadlineAt?: number;
+  shouldRetry?: (result: RetryTaskResult<T>, attemptCount: number) => boolean;
+};
 
 /**
  * 执行 task（一次模型调用），在以下情况重试：
@@ -30,36 +38,34 @@ const RETRY_BACKOFF_MS = 500;
  */
 export async function withLimitedRetry<T>(
   task: () => Promise<RetryTaskResult<T>>,
-  options: { isTimeoutError?: (error: unknown) => boolean } = {},
+  options: RetryOptions<T> = {},
 ): Promise<RetryOutcome<T>> {
   const { isTimeoutError = (e) => e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError") } = options;
+  const maxAttempts = Math.max(1, Math.min(options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS, 3));
+  const backoffMs = Math.max(0, options.backoffMs ?? DEFAULT_RETRY_BACKOFF_MS);
   let last: RetryTaskResult<T> = { ok: false, code: "provider_error", error: "未知错误" };
   let attemptCount = 0;
 
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (options.deadlineAt !== undefined && Date.now() >= options.deadlineAt) break;
     attemptCount += 1;
     try {
       last = await task();
       if (last.ok) return { result: last, attemptCount };
-      // 可重试的失败类型：超时/网络/限流/5xx
-      if (last.code === "client_error" || last.code === "invalid_output") {
-        return { result: last, attemptCount };
-      }
-      // 还有重试机会则退避后继续
-      if (attempt < MAX_ATTEMPTS - 1) {
-        await sleep(RETRY_BACKOFF_MS);
-      }
     } catch (error) {
       const timedOut = isTimeoutError(error);
       const message = error instanceof Error ? error.message : "网络错误";
       last = timedOut
         ? { ok: false, code: "timeout", error: "DeepSeek 请求超时" }
         : { ok: false, code: "provider_error", error: `无法连接 DeepSeek：${message}` };
-      // 超时/网络错误也允许重试（外层 2 次尝试内）
-      if (attempt < MAX_ATTEMPTS - 1) {
-        await sleep(RETRY_BACKOFF_MS);
-      }
     }
+
+    const retryable = options.shouldRetry
+      ? options.shouldRetry(last, attemptCount)
+      : !last.ok && last.code !== "client_error" && last.code !== "invalid_output";
+    if (!retryable || attempt >= maxAttempts - 1) break;
+    if (options.deadlineAt !== undefined && Date.now() + backoffMs >= options.deadlineAt) break;
+    if (backoffMs > 0) await sleep(backoffMs);
   }
   return { result: last, attemptCount };
 }

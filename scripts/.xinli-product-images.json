@@ -1,0 +1,32 @@
+{
+  "XL-ST-3.5X12": {
+    "url": "/api/product-images/xl-st-3.5x12-097d3f.png",
+    "file": "xl-st-3.5x12-097d3f.png",
+    "bytes": 1189160
+  },
+  "XL-BO-8.8-M6X20": {
+    "url": "/api/product-images/xl-bo-8.8-m6x20-6558b1.png",
+    "file": "xl-bo-8.8-m6x20-6558b1.png",
+    "bytes": 1740135
+  },
+  "XL-SUS304-PH2X8": {
+    "url": "/api/product-images/xl-sus304-ph2x8-8bbc22.png",
+    "file": "xl-sus304-ph2x8-8bbc22.png",
+    "bytes": 1788405
+  },
+  "XL-PR-ALU-100X80": {
+    "url": "/api/product-images/xl-pr-alu-100x80-68abdb.png",
+    "file": "xl-pr-alu-100x80-68abdb.png",
+    "bytes": 1811349
+  },
+  "XL-PR-SEC-30X30": {
+    "url": "/api/product-images/xl-pr-sec-30x30-bd3ade.png",
+    "file": "xl-pr-sec-30x30-bd3ade.png",
+    "bytes": 1752483
+  },
+  "XL-PR-AUT-45X30": {
+    "url": "/api/product-images/xl-pr-aut-45x30-921680.png",
+    "file": "xl-pr-aut-45x30-921680.png",
+    "bytes": 1677396
+  }
+}

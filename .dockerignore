@@ -4,3 +4,31 @@ node_modules
 .env*
 npm-debug.log*
 tests
+
+# ---------------------------------------------------------------------------
+# vendor 模板的**开发依赖**：不需要进镜像（2026-09-14 补）
+#
+# 22 套开源模板各自带 node_modules（实测单个 264MB，合计约 5GB），
+# 但本项目运行时只读它们的**构建产物**（`<模板>/dist/index.html`，
+# 见 lib/template-static.ts:133-138），从不执行模板自己的构建。
+#
+# 不排除的后果：Docker 构建上下文涨到 4GB+ 且持续增长，
+# `docker compose build` 光传文件就要十几分钟（实测卡在
+# `transferring context: 3.97GB` 不动）。
+#
+# ⚠️ 只排除 **vendor 子目录下**的 node_modules。
+#    不能写 `**/node_modules`——那会连**根目录**的一起排除，
+#    导致 `Dockerfile:4` 的 `RUN npm ci` 拿不到依赖、整个构建失败。
+vendor/**/node_modules
+
+# 模板的构建中间产物与缓存（同样只有 dist/ 有用）——同样只针对 vendor
+vendor/**/.astro
+vendor/**/.turbo
+vendor/**/.cache
+vendor/**/playwright-report
+vendor/**/test-results
+
+# 编辑器/系统垃圾
+**/.DS_Store
+**/.vscode
+**/.idea

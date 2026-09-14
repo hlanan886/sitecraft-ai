@@ -1,0 +1,771 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-37fxchfa> <!-- Global Metadata --><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><meta name="generator" content="Astro v5.18.2"><!-- Canonical URL --><link rel="canonical" href="https://yukina-blog.vercel.app/posts/4e92433e/"><!-- Primary Meta Tags --><title>Yukina</title><meta name="title" content="Yukina"><meta name="description" content="Demo Site"><!-- Open Graph / Facebook --><meta property="og:type" content="website"><meta property="og:url" content="https://yukina-blog.vercel.app/posts/4e92433e/"><meta property="og:title" content="Yukina"><meta property="og:description" content="Demo Site"><!-- <meta property="og:image" content={new URL(image, Astro.url)} /> --><!-- Twitter --><meta property="twitter:card" content="summary_large_image"><meta property="twitter:url" content="https://yukina-blog.vercel.app/posts/4e92433e/"><meta property="twitter:title" content="Yukina"><meta property="twitter:description" content="Demo Site"><!-- <meta property="twitter:image" content={new URL(image, Astro.url)} /> --><!-- RSS AutoDiscovery --><link rel="alternate" type="application/rss+xml" title="Yukina" href="https://yukina-blog.vercel.app/rss.xml"><!-- SiteMap --><link rel="sitemap" href="/sitemap-index.xml"><!-- CSS --><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/katex/dist/katex.min.css"><!-- Fonts --><link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=noto-sans-sc:100,200,300,400,500,600,700,800,900|raleway:500,700" rel="stylesheet"><script type="module" src="/_astro/ScriptSetup.astro_astro_type_script_index_0_lang.BPGC76Na.js"></script><link rel="stylesheet" href="/_astro/_page_.DKnoNNER.css">
+<style>.article code:not(pre code):before{content:none!important}.article code:not(pre code):after{content:none!important}.article code:not(pre code){font-size:.875rem;line-height:1.25rem;font-family:var(--code-font)!important;border-radius:4px;color:var(--primary-color)!important;background-color:var(--primary-color-lighten)!important}.article h1,.article h2,.article h3,.article h4,.article h5,.article h6{display:flex;flex-direction:row;align-items:center;position:relative}.article h1:before,.article h2:before,.article h3:before,.article h4:before,.article h5:before,.article h6:before{position:absolute;display:block;content:" ";background-color:var(--primary-color);top:2.5px;bottom:3px;width:.3rem;border-radius:4px}.article h1>a,.article h2>a,.article h3>a,.article h4>a,.article h5>a,.article h6>a{margin:.5rem}.article li::marker{color:var(--primary-color)!important}.article blockquote{border-inline-start-color:var(--primary-color)!important;padding:.125rem .75rem}@media(min-width:1024px){.article blockquote{padding-left:1rem}}.article blockquote{font-style:normal!important;border-radius:.25rem;background-color:var(--primary-color-transparent)!important}.article blockquote blockquote{margin-top:.25rem;margin-bottom:.25rem}.article blockquote p{padding:0;margin:0;color:var(--text-color)}.article blockquote p:first-child{padding-top:.3rem}.article blockquote p:last-child{padding-bottom:.3rem}.article blockquote p:before{content:""!important}.article blockquote p:after{content:""!important}.article a{color:var(--primary-color)!important}.article hr{margin-top:1.5rem;margin-bottom:1.5rem;border-color:var(--primary-color-lighten)!important}.article pre{margin-top:.75rem;margin-bottom:.75rem;overflow:hidden!important}.article span.line{font-size:14px!important;line-height:normal;font-family:var(--code-font)!important}.article code{counter-reset:line}.article span.line:before{content:counter(line);counter-increment:line;direction:rtl;display:inline-block;margin-right:1rem;width:1rem;color:#ffffff40}.article span.line:last-child:empty,.article span.line:last-child:has(>.article span:empty:only-child){display:none}.article p{margin-top:.75rem;margin-bottom:.75rem}.article .astro-code{border-radius:.75rem!important;scrollbar-width:thin}.fonts[data-astro-cid-er4ir5rx]{font-family:var(--primary-font)}
+.article-wrapper[data-astro-cid-gjtny2mx]{margin-left:.75rem;margin-right:.75rem;border-radius:1rem;background-color:var(--card-color);padding:1.5rem 1.25rem}@media(min-width:1024px){.article-wrapper[data-astro-cid-gjtny2mx]{margin-left:0;margin-right:0;padding:2.25rem 2.5rem}}.article[data-astro-cid-gjtny2mx]{display:flex;flex-direction:column;font-size:var(--primary-font)}
+</style>
+<link rel="stylesheet" href="/_astro/index.BK-0lrPl.css"><script type="module" src="/_astro/page.B5muct8s.js"></script><body class="overflow-y-hidden" data-astro-cid-37fxchfa>  <nav class="nav" id="nav" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <div class="relative flex h-[4rem] w-full items-center justify-between overflow-visible lg:h-[4.5rem]" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <div class="brand after:content-['']" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <button id="menu-switcher" type="button" class="h-[40px] w-[44px] content-center" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <svg width="24" height="24" viewBox="0 0 24 24" id="menu-icon-closed" class="mx-auto hidden" data-astro-cid-ymhdp2rl="true" data-icon="line-md:close-to-menu-transition">   <symbol id="ai:line-md:close-to-menu-transition"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5l7 0l7 0M5 12h14M5 19l7 0l7 0"><animate fill="freeze" attributeName="d" dur="0.4s" values="M5 5l7 7l7 -7M12 12h0M5 19l7 -7l7 7;M5 5l7 0l7 0M5 12h14M5 19l7 0l7 0"/></path></symbol><use href="#ai:line-md:close-to-menu-transition"></use>  </svg> <svg width="24" height="24" viewBox="0 0 24 24" id="menu-icon-opened" class="mx-auto hidden" data-astro-cid-ymhdp2rl="true" data-icon="line-md:menu-to-close-transition">   <symbol id="ai:line-md:menu-to-close-transition"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5l7 7l7 -7M12 12h0M5 19l7 -7l7 7"><animate fill="freeze" attributeName="d" dur="0.4s" values="M5 5l7 0l7 0M5 12h14M5 19l7 0l7 0;M5 5l7 7l7 -7M12 12h0M5 19l7 -7l7 7"/></path></symbol><use href="#ai:line-md:menu-to-close-transition"></use>  </svg> </button> <a class="title" href="/" data-astro-cid-ymhdp2rl style="--navCount: 4;"> Yukina </a> </div> <a class="brand-lg" href="/" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <div class="title space-x-2" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <svg width="32" height="32" viewBox="0 0 24 24" data-astro-cid-ymhdp2rl="true" data-icon="heroicons:home">   <symbol id="ai:heroicons:home"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m2.25 12l8.955-8.955a1.124 1.124 0 0 1 1.59 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></symbol><use href="#ai:heroicons:home"></use>  </svg> <p data-astro-cid-ymhdp2rl style="--navCount: 4;">Yukina</p> </div> </a> <div class="menu" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <a href="/" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <p data-astro-cid-ymhdp2rl style="--navCount: 4;">Home</p> </a><a href="/archive" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <p data-astro-cid-ymhdp2rl style="--navCount: 4;">Archive</p> </a><a href="/about" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <p data-astro-cid-ymhdp2rl style="--navCount: 4;">About</p> </a><a href="https://github.com/WhitePaper233/yukina" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <p data-astro-cid-ymhdp2rl style="--navCount: 4;">GitHub</p> </a> </div> <div class="toolbar" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <div class="lg:hidden" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event("astro:only"));})();</script><script>(()=>{var A=Object.defineProperty;var g=(i,o,a)=>o in i?A(i,o,{enumerable:!0,configurable:!0,writable:!0,value:a}):i[o]=a;var d=(i,o,a)=>g(i,typeof o!="symbol"?o+"":o,a);{let i={0:t=>m(t),1:t=>a(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(a(t)),5:t=>new Set(a(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>1/0*t},o=t=>{let[l,e]=t;return l in i?i[l](e):void 0},a=t=>t.map(o),m=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([l,e])=>[l,o(e)]));class y extends HTMLElement{constructor(){super(...arguments);d(this,"Component");d(this,"hydrator");d(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let c=this.querySelectorAll("astro-slot"),n={},h=this.querySelectorAll("template[data-astro-template]");for(let r of h){let s=r.closest(this.tagName);s!=null&&s.isSameNode(this)&&(n[r.getAttribute("data-astro-template")||"default"]=r.innerHTML,r.remove())}for(let r of c){let s=r.closest(this.tagName);s!=null&&s.isSameNode(this)&&(n[r.getAttribute("name")||"default"]=r.innerHTML)}let p;try{p=this.hasAttribute("props")?m(JSON.parse(this.getAttribute("props"))):{}}catch(r){let s=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&&(s+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${s}`,this.getAttribute("props"),r),r}let u;await this.hydrator(this)(this.Component,p,n,{client:this.getAttribute("client")}),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});d(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),c.disconnect(),this.childrenConnectedCallback()},c=new MutationObserver(()=>{var n;((n=this.lastChild)==null?void 0:n.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue==="astro:end"&&(this.lastChild.remove(),e())});c.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&&await import(e),this.start()}async start(){let e=JSON.parse(this.getAttribute("opts")),c=this.getAttribute("client");if(Astro[c]===void 0){window.addEventListener(`astro:${c}`,()=>this.start(),{once:!0});return}try{await Astro[c](async()=>{let n=this.getAttribute("renderer-url"),[h,{default:p}]=await Promise.all([import(this.getAttribute("component-url")),n?import(n):()=>()=>{}]),u=this.getAttribute("component-export")||"default";if(!u.includes("."))this.Component=h[u];else{this.Component=h;for(let f of u.split("."))this.Component=this.Component[f]}return this.hydrator=p,this.hydrate},e,this)}catch(n){console.error(`[astro-island] Error hydrating ${this.getAttribute("component-url")}`,n)}}attributeChangedCallback(){this.hydrate()}}d(y,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",y)}})();</script><astro-island uid="Z2tFgys" component-url="/_astro/MobileSearchBar.b_tIy8Ym.js" component-export="default" renderer-url="/_astro/client.svelte.ByR7E38m.js" props="{&quot;data-astro-cid-ymhdp2rl&quot;:[0,true]}" ssr client="only" opts="{&quot;name&quot;:&quot;MobileSearchBar&quot;,&quot;value&quot;:&quot;svelte&quot;}"></astro-island> </div> <div class="hidden lg:block" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <astro-island uid="ZVyFA0" component-url="/_astro/SearchBar.Cp2N6rjI.js" component-export="default" renderer-url="/_astro/client.svelte.ByR7E38m.js" props="{&quot;data-astro-cid-ymhdp2rl&quot;:[0,true]}" ssr client="only" opts="{&quot;name&quot;:&quot;SearchBar&quot;,&quot;value&quot;:&quot;svelte&quot;}"></astro-island> </div> <div class="theme" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <button type="button" id="theme-switcher" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <svg width="24" height="24" viewBox="0 0 24 24" id="theme-icon-light" class="hidden" data-astro-cid-ymhdp2rl="true" data-icon="line-md:moon-alt-to-sunny-outline-loop-transition">   <symbol id="ai:line-md:moon-alt-to-sunny-outline-loop-transition"><defs><mask id="SVGUXuaaerw7"><path fill="#fff" d="M12 6c3.31 0 6 2.69 6 6c0 3.31 -2.69 6 -6 6c-3.31 0 -6 -2.69 -6 -6c0 -3.31 2.69 -6 6 -6Z"><animate fill="freeze" attributeName="d" dur="0.4s" values="M12 2c5.52 0 10 4.48 10 10c0 5.52 -4.48 10 -10 10c-5.52 0 -10 -4.48 -10 -10c0 -5.52 4.48 -10 10 -10Z;M12 6c3.31 0 6 2.69 6 6c0 3.31 -2.69 6 -6 6c-3.31 0 -6 -2.69 -6 -6c0 -3.31 2.69 -6 6 -6Z"/></path><path d="M22 -4c3.31 0 6 2.69 6 6c0 3.31 -2.69 6 -6 6c-3.31 0 -6 -2.69 -6 -6c0 -3.31 2.69 -6 6 -6Z"><animate fill="freeze" attributeName="d" dur="0.4s" values="M18 -4c5.52 0 10 4.48 10 10c0 5.52 -4.48 10 -10 10c-5.52 0 -10 -4.48 -10 -10c0 -5.52 4.48 -10 10 -10Z;M22 -4c3.31 0 6 2.69 6 6c0 3.31 -2.69 6 -6 6c-3.31 0 -6 -2.69 -6 -6c0 -3.31 2.69 -6 6 -6Z"/><set fill="freeze" attributeName="opacity" begin="0.4s" to="0"/></path><path d="M12 8c2.21 0 4 1.79 4 4c0 2.21 -1.79 4 -4 4c-2.21 0 -4 -1.79 -4 -4c0 -2.21 1.79 -4 4 -4Z"><animate fill="freeze" attributeName="d" dur="0.4s" values="M12 4c4.42 0 8 3.58 8 8c0 4.42 -3.58 8 -8 8c-4.42 0 -8 -3.58 -8 -8c0 -4.42 3.58 -8 8 -8Z;M12 8c2.21 0 4 1.79 4 4c0 2.21 -1.79 4 -4 4c-2.21 0 -4 -1.79 -4 -4c0 -2.21 1.79 -4 4 -4Z"/></path></mask><mask id="SVGjqg97bFZ7"><path fill="#fff" d="M22 -6c4.42 0 8 3.58 8 8c0 4.42 -3.58 8 -8 8c-4.42 0 -8 -3.58 -8 -8c0 -4.42 3.58 -8 8 -8Z"><animate fill="freeze" attributeName="d" dur="0.4s" values="M18 -6c6.62 0 12 5.38 12 12c0 6.62 -5.38 12 -12 12c-6.62 0 -12 -5.38 -12 -12c0 -6.62 5.38 -12 12 -12Z;M22 -6c4.42 0 8 3.58 8 8c0 4.42 -3.58 8 -8 8c-4.42 0 -8 -3.58 -8 -8c0 -4.42 3.58 -8 8 -8Z"/><set fill="freeze" attributeName="opacity" begin="0.4s" to="0"/></path><path d="M22 -4c3.31 0 6 2.69 6 6c0 3.31 -2.69 6 -6 6c-3.31 0 -6 -2.69 -6 -6c0 -3.31 2.69 -6 6 -6ZM6 12v-20h26v26h-20c3.31 0 6 -2.69 6 -6c0 -3.31 -2.69 -6 -6 -6c-3.31 0 -6 2.69 -6 6Z"><animate fill="freeze" attributeName="d" dur="0.4s" values="M18 -4c5.52 0 10 4.48 10 10c0 5.52 -4.48 10 -10 10c-5.52 0 -10 -4.48 -10 -10c0 -5.52 4.48 -10 10 -10ZM2 12v-20h30v30h-20c5.52 0 10 -4.48 10 -10c0 -5.52 -4.48 -10 -10 -10c-5.52 0 -10 4.48 -10 10Z;M22 -4c3.31 0 6 2.69 6 6c0 3.31 -2.69 6 -6 6c-3.31 0 -6 -2.69 -6 -6c0 -3.31 2.69 -6 6 -6ZM6 12v-20h26v26h-20c3.31 0 6 -2.69 6 -6c0 -3.31 -2.69 -6 -6 -6c-3.31 0 -6 2.69 -6 6Z"/><set fill="freeze" attributeName="opacity" begin="0.4s" to="0"/></path></mask></defs><g fill="currentColor"><path d="M0 0h24v24H0z" mask="url(#SVGUXuaaerw7)"/><path d="M0 0h24v24H0z" mask="url(#SVGjqg97bFZ7)"/></g><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 21v1M21 12h1M12 3v-1M3 12h-1" opacity="0"><animateTransform attributeName="transform" dur="30s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/><set fill="freeze" attributeName="opacity" begin="0.4s" to="1"/><animate fill="freeze" attributeName="d" begin="0.4s" dur="0.2s" values="M12 19v1M19 12h1M12 5v-1M5 12h-1;M12 21v1M21 12h1M12 3v-1M3 12h-1"/></path><path d="M18.5 18.5l0.5 0.5M18.5 5.5l0.5 -0.5M5.5 5.5l-0.5 -0.5M5.5 18.5l-0.5 0.5" opacity="0"><animateTransform attributeName="transform" dur="30s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/><set fill="freeze" attributeName="opacity" begin="0.6s" to="1"/><animate fill="freeze" attributeName="d" begin="0.6s" dur="0.2s" values="M17 17l0.5 0.5M17 7l0.5 -0.5M7 7l-0.5 -0.5M7 17l-0.5 0.5;M18.5 18.5l0.5 0.5M18.5 5.5l0.5 -0.5M5.5 5.5l-0.5 -0.5M5.5 18.5l-0.5 0.5"/></path></g></symbol><use href="#ai:line-md:moon-alt-to-sunny-outline-loop-transition"></use>  </svg> <svg width="24" height="24" viewBox="0 0 24 24" id="theme-icon-dark" class="hidden" data-astro-cid-ymhdp2rl="true" data-icon="line-md:sunny-outline-to-moon-alt-loop-transition">   <symbol id="ai:line-md:sunny-outline-to-moon-alt-loop-transition"><defs><mask id="SVGHXYFDcmX7"><path fill="#fff" d="M12 2c5.52 0 10 4.48 10 10c0 5.52 -4.48 10 -10 10c-5.52 0 -10 -4.48 -10 -10c0 -5.52 4.48 -10 10 -10Z"><animate fill="freeze" attributeName="d" dur="0.4s" values="M12 6c3.31 0 6 2.69 6 6c0 3.31 -2.69 6 -6 6c-3.31 0 -6 -2.69 -6 -6c0 -3.31 2.69 -6 6 -6Z;M12 2c5.52 0 10 4.48 10 10c0 5.52 -4.48 10 -10 10c-5.52 0 -10 -4.48 -10 -10c0 -5.52 4.48 -10 10 -10Z"/><set fill="freeze" attributeName="opacity" begin="0.4s" to="0"/></path><path d="M18 -4c5.52 0 10 4.48 10 10c0 5.52 -4.48 10 -10 10c-5.52 0 -10 -4.48 -10 -10c0 -5.52 4.48 -10 10 -10ZM12 4c4.42 0 8 3.58 8 8c0 4.42 -3.58 8 -8 8c-4.42 0 -8 -3.58 -8 -8c0 -4.42 3.58 -8 8 -8Z"><animate fill="freeze" attributeName="d" dur="0.4s" values="M22 -4c3.31 0 6 2.69 6 6c0 3.31 -2.69 6 -6 6c-3.31 0 -6 -2.69 -6 -6c0 -3.31 2.69 -6 6 -6ZM12 8c2.21 0 4 1.79 4 4c0 2.21 -1.79 4 -4 4c-2.21 0 -4 -1.79 -4 -4c0 -2.21 1.79 -4 4 -4Z;M18 -4c5.52 0 10 4.48 10 10c0 5.52 -4.48 10 -10 10c-5.52 0 -10 -4.48 -10 -10c0 -5.52 4.48 -10 10 -10ZM12 4c4.42 0 8 3.58 8 8c0 4.42 -3.58 8 -8 8c-4.42 0 -8 -3.58 -8 -8c0 -4.42 3.58 -8 8 -8Z"/><set fill="freeze" attributeName="opacity" begin="0.4s" to="0"/></path></mask><mask id="SVGYzLhkdyh7"><path fill="#fff" d="M18 -6c6.62 0 12 5.38 12 12c0 6.62 -5.38 12 -12 12c-6.62 0 -12 -5.38 -12 -12c0 -6.62 5.38 -12 12 -12Z"><animate fill="freeze" attributeName="d" dur="0.4s" values="M22 -6c4.42 0 8 3.58 8 8c0 4.42 -3.58 8 -8 8c-4.42 0 -8 -3.58 -8 -8c0 -4.42 3.58 -8 8 -8Z;M18 -6c6.62 0 12 5.38 12 12c0 6.62 -5.38 12 -12 12c-6.62 0 -12 -5.38 -12 -12c0 -6.62 5.38 -12 12 -12Z"/><set fill="freeze" attributeName="opacity" begin="0.4s" to="0"/></path><path d="M18 -4c5.52 0 10 4.48 10 10c0 5.52 -4.48 10 -10 10c-5.52 0 -10 -4.48 -10 -10c0 -5.52 4.48 -10 10 -10ZM2 12v-20h30v30h-20c5.52 0 10 -4.48 10 -10c0 -5.52 -4.48 -10 -10 -10c-5.52 0 -10 4.48 -10 10Z"><animate fill="freeze" attributeName="d" dur="0.4s" values="M22 -4c3.31 0 6 2.69 6 6c0 3.31 -2.69 6 -6 6c-3.31 0 -6 -2.69 -6 -6c0 -3.31 2.69 -6 6 -6ZM6 12v-20h26v26h-20c3.31 0 6 -2.69 6 -6c0 -3.31 -2.69 -6 -6 -6c-3.31 0 -6 2.69 -6 6Z;M18 -4c5.52 0 10 4.48 10 10c0 5.52 -4.48 10 -10 10c-5.52 0 -10 -4.48 -10 -10c0 -5.52 4.48 -10 10 -10ZM2 12v-20h30v30h-20c5.52 0 10 -4.48 10 -10c0 -5.52 -4.48 -10 -10 -10c-5.52 0 -10 4.48 -10 10Z"/><set fill="freeze" attributeName="opacity" begin="0.4s" to="0"/></path></mask></defs><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21v1M21 12h1M12 3v-1M3 12h-1M18.5 18.5l0.5 0.5M18.5 5.5l0.5 -0.5M5.5 5.5l-0.5 -0.5M5.5 18.5l-0.5 0.5"><animate fill="freeze" attributeName="opacity" dur="0.4s" values="1;0"/></path><g fill="currentColor"><path d="M0 0h24v24H0z" mask="url(#SVGHXYFDcmX7)"/><path d="M0 0h24v24H0z" mask="url(#SVGYzLhkdyh7)"/></g><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="2" d="M7 6c0 6.08 4.92 11 11 11c0.53 0 1.05 -0.04 1.56 -0.11c-1.61 2.47 -4.39 4.11 -7.56 4.11c-4.97 0 -9 -4.03 -9 -9c0 -3.17 1.64 -5.95 4.11 -7.56c-0.07 0.51 -0.11 1.03 -0.11 1.56Z" opacity="0"><set fill="freeze" attributeName="opacity" begin="0.4s" to="1"/></path><g stroke-dasharray="4" stroke-dashoffset="4"><path d="M12 5h1.5M12 5h-1.5M12 5v1.5M12 5v-1.5"><animate attributeName="stroke-dashoffset" begin="0.4s" dur="6s" keyTimes="0;0.08;0.22;0.3;1" repeatCount="indefinite" values="4;0;0;4;4"/></path><path d="M17 11h1.5M17 11h-1.5M17 11v1.5M17 11v-1.5"><animate attributeName="stroke-dashoffset" begin="1.07s" dur="6s" keyTimes="0;0.08;0.22;0.3;1" repeatCount="indefinite" values="4;0;0;4;4"/></path><path d="M20 5h1.5M20 5h-1.5M20 5v1.5M20 5v-1.5"><animate attributeName="stroke-dashoffset" begin="1.74s" dur="6s" keyTimes="0;0.08;0.22;0.3;1" repeatCount="indefinite" values="4;0;0;4;4"/></path><path d="M12 4h1.5M12 4h-1.5M12 4v1.5M12 4v-1.5"><animate attributeName="stroke-dashoffset" begin="2.41s" dur="6s" keyTimes="0;0.08;0.22;0.3;1" repeatCount="indefinite" values="4;0;0;4;4"/></path><path d="M18 12h1.5M18 12h-1.5M18 12v1.5M18 12v-1.5"><animate attributeName="stroke-dashoffset" begin="3.08s" dur="6s" keyTimes="0;0.08;0.22;0.3;1" repeatCount="indefinite" values="4;0;0;4;4"/></path><path d="M19 4h1.5M19 4h-1.5M19 4v1.5M19 4v-1.5"><animate attributeName="stroke-dashoffset" begin="3.75s" dur="6s" keyTimes="0;0.08;0.22;0.3;1" repeatCount="indefinite" values="4;0;0;4;4"/></path><path d="M13 4h1.5M13 4h-1.5M13 4v1.5M13 4v-1.5"><animate attributeName="stroke-dashoffset" begin="4.42s" dur="6s" keyTimes="0;0.08;0.22;0.3;1" repeatCount="indefinite" values="4;0;0;4;4"/></path><path d="M19 11h1.5M19 11h-1.5M19 11v1.5M19 11v-1.5"><animate attributeName="stroke-dashoffset" begin="5.09s" dur="6s" keyTimes="0;0.08;0.22;0.3;1" repeatCount="indefinite" values="4;0;0;4;4"/></path><path d="M20 5h1.5M20 5h-1.5M20 5v1.5M20 5v-1.5"><animate attributeName="stroke-dashoffset" begin="5.76s" dur="6s" keyTimes="0;0.08;0.22;0.3;1" repeatCount="indefinite" values="4;0;0;4;4"/></path></g></g></symbol><use href="#ai:line-md:sunny-outline-to-moon-alt-loop-transition"></use>  </svg> </button> </div> </div> </div> <div id="mobile-menu" class="px-3 transition-all" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <ul id="mobile-menu-nav" class="mobile-menu-nav mobile-menu-nav-closed flex flex-col space-y-6 overflow-hidden text-xl font-medium text-[var(--text-color)] transition-all duration-300" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <li class="mt-1" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <a href="/" class="mobile-nav-item" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <div class="flex flex-row items-center space-x-2" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <span class="text-[var(--primary-color)]" data-astro-cid-ymhdp2rl style="--navCount: 4;">·</span> <span data-astro-cid-ymhdp2rl style="--navCount: 4;">Home</span> </div> <svg width="1em" height="1em" viewBox="0 0 24 24" class="text-[var(--text-color-lighten)]" data-astro-cid-ymhdp2rl="true" data-icon="cuida:caret-right-outline">   <symbol id="ai:cuida:caret-right-outline"><path fill="currentColor" fill-rule="evenodd" d="M7.793 19.707a1 1 0 0 1 0-1.414L14.086 12L7.793 5.707a1 1 0 0 1 1.414-1.414l6.293 6.293a2 2 0 0 1 0 2.828l-6.293 6.293a1 1 0 0 1-1.414 0" clip-rule="evenodd"/></symbol><use href="#ai:cuida:caret-right-outline"></use>  </svg> </a> </li><li class="mt-1" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <a href="/archive" class="mobile-nav-item" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <div class="flex flex-row items-center space-x-2" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <span class="text-[var(--primary-color)]" data-astro-cid-ymhdp2rl style="--navCount: 4;">·</span> <span data-astro-cid-ymhdp2rl style="--navCount: 4;">Archive</span> </div> <svg width="1em" height="1em" viewBox="0 0 24 24" class="text-[var(--text-color-lighten)]" data-astro-cid-ymhdp2rl="true" data-icon="cuida:caret-right-outline">   <use href="#ai:cuida:caret-right-outline"></use>  </svg> </a> </li><li class="mt-1" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <a href="/about" class="mobile-nav-item" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <div class="flex flex-row items-center space-x-2" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <span class="text-[var(--primary-color)]" data-astro-cid-ymhdp2rl style="--navCount: 4;">·</span> <span data-astro-cid-ymhdp2rl style="--navCount: 4;">About</span> </div> <svg width="1em" height="1em" viewBox="0 0 24 24" class="text-[var(--text-color-lighten)]" data-astro-cid-ymhdp2rl="true" data-icon="cuida:caret-right-outline">   <use href="#ai:cuida:caret-right-outline"></use>  </svg> </a> </li><li class="mt-1" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <a href="https://github.com/WhitePaper233/yukina" class="mobile-nav-item" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <div class="flex flex-row items-center space-x-2" data-astro-cid-ymhdp2rl style="--navCount: 4;"> <span class="text-[var(--primary-color)]" data-astro-cid-ymhdp2rl style="--navCount: 4;">·</span> <span data-astro-cid-ymhdp2rl style="--navCount: 4;">GitHub</span> </div> <svg width="1em" height="1em" viewBox="0 0 24 24" class="text-[var(--text-color-lighten)]" data-astro-cid-ymhdp2rl="true" data-icon="cuida:caret-right-outline">   <use href="#ai:cuida:caret-right-outline"></use>  </svg> </a> </li> </ul> </div> </nav>  <script type="module">const l=e=>{const a=e.cloneNode(!0);return e.parentNode?.replaceChild(a,e),a},y=document.getElementById("menu-switcher"),s=document.getElementById("mobile-menu-nav"),r=document.getElementsByClassName("mobile-nav-item");let n=document.getElementById("menu-icon-closed"),o=document.getElementById("menu-icon-opened"),t=!1;const i=()=>{n.style.display=t?"block":"none",o.style.display=t?"none":"block",t?n=l(n):o=l(o),t?s.classList.replace("mobile-menu-nav-opened","mobile-menu-nav-closed"):s.classList.replace("mobile-menu-nav-closed","mobile-menu-nav-opened"),t=!t};y.addEventListener("click",i);for(let e=0;e<r.length;++e)r.item(e)?.addEventListener("click",i);document.addEventListener("click",e=>{!y.contains(e.target)&&!s.contains(e.target)&&t&&i()});const E=document.getElementById("theme-switcher");let c=document.getElementById("theme-icon-light"),d=document.getElementById("theme-icon-dark"),m=localStorage.getItem("theme")||"light";const h=e=>{document.documentElement.setAttribute("data-theme",e),localStorage.setItem("theme",e),m=e,d.style.display=e==="dark"?"block":"none",c.style.display=e==="light"?"block":"none",e==="dark"?d=l(d):c=l(c),document.documentElement.classList.toggle("dark",e==="dark")};E.addEventListener("click",()=>{h(m==="light"?"dark":"light")});document.addEventListener("DOMContentLoaded",()=>{h(m),n.style.display="block"});const u=document.getElementById("nav"),b=document.getElementById("banner"),p=b.offsetHeight-50;let g=0;window.addEventListener("scroll",()=>{p<window.scrollY&&window.scrollY>g?u.style.top="-72px":u.style.top="0",g=window.scrollY});</script> <script>
+  // load pagefind
+  async function loadPagefind() {
+    const pagefind = await import("/pagefind/pagefind.js");
+    await pagefind.options({
+      excerptLength: 20,
+    });
+    pagefind.init();
+    window.pagefind = pagefind;
+    pagefind.search("");
+  }
+  loadPagefind();
+</script> <div id="banner" class="banner onload-animation-fade-in" data-astro-cid-kggsjsm4 style="--carouselAnimationTime: 48s;"> <div class="transition-main banner-inner h-full w-full" data-astro-cid-kggsjsm4 style="--carouselAnimationTime: 48s;"> <div class="carousel" data-astro-cid-kggsjsm4 style="--carouselAnimationTime: 48s;"> <ul id="carousel_imgs" data-astro-cid-kggsjsm4 style="--carouselAnimationTime: 48s;"> <li class="item lozad" style="animation-delay:0s;--carouselAnimationTime: 48s;" data-background-image="https://s2.loli.net/2025/01/25/PBvHFjr5yDu6t4a.webp" data-astro-cid-kggsjsm4></li><li class="item lozad" style="animation-delay:6s;--carouselAnimationTime: 48s;" data-background-image="https://s2.loli.net/2025/01/25/6bKcwHZigzlM4mJ.webp" data-astro-cid-kggsjsm4></li><li class="item lozad" style="animation-delay:12s;--carouselAnimationTime: 48s;" data-background-image="https://s2.loli.net/2025/01/25/H9WgEK6qNTcpFiS.webp" data-astro-cid-kggsjsm4></li><li class="item lozad" style="animation-delay:18s;--carouselAnimationTime: 48s;" data-background-image="https://s2.loli.net/2025/01/25/njNVtuUMzxs81RI.webp" data-astro-cid-kggsjsm4></li><li class="item lozad" style="animation-delay:24s;--carouselAnimationTime: 48s;" data-background-image="https://s2.loli.net/2025/01/25/tozsJ8QHAjFN3Mm.webp" data-astro-cid-kggsjsm4></li><li class="item lozad" style="animation-delay:30s;--carouselAnimationTime: 48s;" data-background-image="https://s2.loli.net/2025/01/25/Pm89OveZq7NWUxF.webp" data-astro-cid-kggsjsm4></li><li class="item lozad" style="animation-delay:36s;--carouselAnimationTime: 48s;" data-background-image="https://s2.loli.net/2025/01/25/UCYKvc1ZhgPHB9m.webp" data-astro-cid-kggsjsm4></li><li class="item lozad" style="animation-delay:42s;--carouselAnimationTime: 48s;" data-background-image="https://s2.loli.net/2025/01/25/JjpLOW8VSmufzlA.webp" data-astro-cid-kggsjsm4></li> </ul> </div>  <div class="relative h-[95%] w-full" data-astro-cid-kggsjsm4 style="--carouselAnimationTime: 48s;"> <div class="absolute left-1/2 top-1/2 w-4/5 -translate-x-1/2 -translate-y-1/2 lg:w-3/4" data-astro-cid-kggsjsm4 style="--carouselAnimationTime: 48s;"> <div class="flex flex-col" data-astro-cid-kggsjsm4 style="--carouselAnimationTime: 48s;"> <h1 class="title title-normal" data-astro-cid-kggsjsm4 style="--carouselAnimationTime: 48s;"> Markdown Tutorial </h1> <h2 class="subtitle" data-astro-cid-kggsjsm4 style="--carouselAnimationTime: 48s;">A simple example of a Markdown blog post.</h2> </div> </div> </div> </div> <div class="waves" id="header-waves" data-astro-cid-kggsjsm4 style="--carouselAnimationTime: 48s;"> <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto" data-astro-cid-kggsjsm4 style="--carouselAnimationTime: 48s;"> <defs data-astro-cid-kggsjsm4 style="--carouselAnimationTime: 48s;"> <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" data-astro-cid-kggsjsm4 style="--carouselAnimationTime: 48s;"></path> </defs> <g class="parallax" data-astro-cid-kggsjsm4 style="--carouselAnimationTime: 48s;"> <use xlink:href="#gentle-wave" x="48" y="0" class="opacity-25" style="animation-delay:-2s;animation-duration:7s;--carouselAnimationTime: 48s;" data-astro-cid-kggsjsm4></use> <use xlink:href="#gentle-wave" x="48" y="3" class="opacity-50" style="animation-delay:-3s;animation-duration:10s;--carouselAnimationTime: 48s;" data-astro-cid-kggsjsm4></use> <use xlink:href="#gentle-wave" x="48" y="5" class="opacity-75" style="animation-delay:-4s;animation-duration:13s;--carouselAnimationTime: 48s;" data-astro-cid-kggsjsm4></use> <use xlink:href="#gentle-wave" x="48" y="7" style="animation-delay:-5s;animation-duration:20s;--carouselAnimationTime: 48s;" data-astro-cid-kggsjsm4></use> </g> </svg> </div> </div> <script type="module">const n=document.createElement("style"),o=document.getElementById("carousel_imgs"),e=o?.children.length??0,a=`
+  @keyframes carousel-animation {
+    0% {
+      opacity: 0;
+      transform: scale(1);
+    }
+    3% {
+      opacity: 1;
+    }
+    8% {
+      opacity: 1;
+      animation-timing-function: ease-out;
+    }
+    ${100/e}% {
+      opacity: 1;
+    }
+    ${100/e+50/e}% {
+      opacity: 0;
+      animation-timing-function: ease-out;
+    }
+    100% {
+      opacity: 0;
+      transform: scale(2);
+    }
+  }
+  `;n.textContent=a;let t=document.getElementById("banner");t&&!t.querySelector("style")&&t.appendChild(n);</script> <div class="main-container my-10" data-astro-cid-ouamjn2i> <div class="flex flex-row items-start xl:space-x-4" data-astro-cid-ouamjn2i> <div class="side-bar" data-astro-cid-ouamjn2i> <div class="flex w-full flex-row justify-center" data-astro-cid-f5u63ayj> <div class="flex flex-col space-y-3" data-astro-cid-f5u63ayj> <div class="onload-animation rounded-3xl bg-[var(--card-color)] p-3" style="animation-delay: var(--onload-animation-delay);" data-astro-cid-f5u63ayj> <a href="/about" class="avatar-wrapper" data-astro-cid-f5u63ayj> <img src="https://s2.loli.net/2025/01/25/FPpTrQSezM8ivbl.webp" alt="avatar" class="avatar lozad select-none" data-astro-cid-f5u63ayj> </a> <div class="username mt-4" data-astro-cid-f5u63ayj> <p data-astro-cid-f5u63ayj>WhitePaper 白芷</p> </div> <p class="slogan mt-2 text-center text-[var(--text-color-lighten)]" data-astro-cid-f5u63ayj> Ad Astra Per Aspera. </p> <div class="mt-1 flex flex-row justify-center" data-astro-cid-f5u63ayj> <div class="flex w-[184px] flex-wrap justify-center gap-2" data-astro-cid-f5u63ayj> <a href="https://github.com/WhitePaper233" target="_blank"> <div class="flex h-10 w-10 flex-col justify-center rounded-lg transition-all hover:brightness-75 dark:hover:brightness-125"> <div class="flex flex-row justify-center"> <svg width="24" height="24" viewBox="0 0 24 24" class="text-[var(--primary-color)]" data-icon="line-md:github-loop">   <symbol id="ai:line-md:github-loop"><defs><mask id="SVGcZ81hcNk14"><path fill="#fff" d="M9.5 8c0.83 0 1.5 0.45 1.5 1c0 0.55 -0.67 1 -1.5 1c-0.83 0 -1.5 -0.45 -1.5 -1c0 -0.55 0.67 -1 1.5 -1ZM14.5 8c0.83 0 1.5 0.45 1.5 1c0 0.55 -0.67 1 -1.5 1c-0.83 0 -1.5 -0.45 -1.5 -1c0 -0.55 0.67 -1 1.5 -1Z"/><rect width="8" height="4" x="8" y="7"><animate attributeName="y" dur="9s" keyTimes="0;0.45;0.46;0.54;0.55;1" repeatCount="indefinite" values="7;7;11;11;7;7"/></rect></mask></defs><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="32" d="M12 4c1.67 0 2.61 0.4 3 0.5c0.53 -0.43 1.94 -1.5 3.5 -1.5c0.34 1 0.29 2.22 0 3c0.75 1 1 2 1 3.5c0 2.19 -0.48 3.58 -1.5 4.5c-1.02 0.92 -2.11 1.37 -3.5 1.5c0.65 0.54 0.5 1.87 0.5 2.5c0 0.73 0 3 0 3M12 4c-1.67 0 -2.61 0.4 -3 0.5c-0.53 -0.43 -1.94 -1.5 -3.5 -1.5c-0.34 1 -0.29 2.22 0 3c-0.75 1 -1 2 -1 3.5c0 2.19 0.48 3.58 1.5 4.5c1.02 0.92 2.11 1.37 3.5 1.5c-0.65 0.54 -0.5 1.87 -0.5 2.5c0 0.73 0 3 0 3"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.6s" values="32;0"/></path><path stroke-dasharray="10" stroke-dashoffset="10" d="M9 19c-1.41 0 -2.84 -0.56 -3.69 -1.19c-0.84 -0.62 -1.09 -1.66 -2.31 -2.31"><animate attributeName="d" dur="3s" keyTimes="0;0.5;1" repeatCount="indefinite" values="M9 19c-1.41 0 -2.84 -0.56 -3.69 -1.19c-0.84 -0.62 -1.09 -1.66 -2.31 -2.31;M9 19c-1.41 0 -3 -0.5 -4 -0.5c-0.53 0 -1 0 -2 -0.5;M9 19c-1.41 0 -2.84 -0.56 -3.69 -1.19c-0.84 -0.62 -1.09 -1.66 -2.31 -2.31"/><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.7s" dur="0.2s" to="0"/></path></g><path fill="currentColor" d="M0 0h24v24H0z" mask="url(#SVGcZ81hcNk14)"/></symbol><use href="#ai:line-md:github-loop"></use>  </svg> </div> </div> </a><a href="https://space.bilibili.com/22433608" target="_blank"> <div class="flex h-10 w-10 flex-col justify-center rounded-lg transition-all hover:brightness-75 dark:hover:brightness-125"> <div class="flex flex-row justify-center"> <svg width="24" height="24" viewBox="0 0 24 24" class="text-[var(--primary-color)]" data-icon="mingcute:bilibili-line">   <symbol id="ai:mingcute:bilibili-line"><path fill="currentColor" d="M7.832 3.445a1 1 0 0 0-1.664 1.11L7 4zm10 1.11a1 1 0 0 0-1.664-1.11L17 4zM10 12a1 1 0 1 0-2 0zm-2 2a1 1 0 1 0 2 0zm8-2a1 1 0 1 0-2 0zm-2 2a1 1 0 1 0 2 0zM6 7v1h12V6H6zm15 3h-1v7h2v-7zm-3 10v-1H6v2h12zM3 17h1v-7H2v7zM7 4l-.832.555l2 3L9 7l.832-.555l-2-3zm10 0l-.832-.555l-2 3L15 7l.832.555l2-3zm-8 8H8v2h2v-2zm6 0h-1v2h2v-2zm-9 8v-1a2 2 0 0 1-2-2H2a4 4 0 0 0 4 4zm15-3h-1a2 2 0 0 1-2 2v2a4 4 0 0 0 4-4zM18 7v1a2 2 0 0 1 2 2h2a4 4 0 0 0-4-4zM6 7V6a4 4 0 0 0-4 4h2a2 2 0 0 1 2-2z"/></symbol><use href="#ai:mingcute:bilibili-line"></use>  </svg> </div> </div> </a><a href="https://music.163.com/#/user/home?id=125291648" target="_blank"> <div class="flex h-10 w-10 flex-col justify-center rounded-lg transition-all hover:brightness-75 dark:hover:brightness-125"> <div class="flex flex-row justify-center"> <svg width="24" height="24" viewBox="0 0 24 24" class="text-[var(--primary-color)]" data-icon="mingcute:netease-music-line">   <symbol id="ai:mingcute:netease-music-line"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M11.058 4c-4.135.457-7.351 4.162-7.351 8.73a8.27 8.27 0 0 0 13.784 6.164c4.01-3.588 1.378-10.55-2.757-10.55h-1.228A4.285 4.285 0 0 0 9.22 12.63a2.857 2.857 0 0 0 2.856 2.856h.13a2.986 2.986 0 0 0 2.986-2.986V5.796a1.796 1.796 0 0 1 3.29-.996l.386.578"/></symbol><use href="#ai:mingcute:netease-music-line"></use>  </svg> </div> </div> </a> </div> </div> </div> <!-- categories --> <div class="onload-animation space-y-2 rounded-3xl bg-[var(--card-color)] p-3" style="animation-delay: calc(var(--onload-animation-delay) + 1 * var(--onload-animation-interval));" data-astro-cid-f5u63ayj> <div class="title m-[0.375rem]" data-astro-cid-f5u63ayj> <a href="/categories/" class="pl-4 text-xl font-bold text-[var(--text-color)] transition-colors hover:text-[var(--primary-color)]" data-astro-cid-f5u63ayj> Categories </a> </div> <div class="relative flex flex-col" data-astro-cid-f5u63ayj> <a href="/categories/e68ee04d" class="category flex flex-row items-center justify-between rounded-lg px-3 py-2 transition-all hover:bg-[var(--primary-color-lighten)]" data-astro-cid-f5u63ayj> <p class="text-[var(--text-color)] transition-all" data-astro-cid-f5u63ayj> Examples </p> <span class="rounded-md bg-[var(--primary-color-lighten)] px-2.5 py-0.5 text-[var(--primary-color)]" data-astro-cid-f5u63ayj> 3 </span> </a>  </div> </div> <!-- tags --> <div class="onload-animation space-y-2 rounded-3xl bg-[var(--card-color)] p-3" style="animation-delay: calc(var(--onload-animation-delay) + 2 * var(--onload-animation-interval));" data-astro-cid-f5u63ayj> <div class="title m-[0.375rem]" data-astro-cid-f5u63ayj> <a href="/tags/" class="pl-4 text-xl font-bold text-[var(--text-color)] transition-colors hover:text-[var(--primary-color)]" data-astro-cid-f5u63ayj> Tags </a> </div> <div class="relative flex max-w-[224px] flex-row flex-wrap" data-astro-cid-f5u63ayj> <a href="/tags/d029f87e" class="tag m-1 grow rounded-md bg-[var(--primary-color-lighten)] px-2 py-1 transition-all hover:brightness-95" data-astro-cid-f5u63ayj> <p class="text-center text-sm text-[var(--primary-color)]" data-astro-cid-f5u63ayj> Example </p> </a><a href="/tags/d534be82" class="tag m-1 grow rounded-md bg-[var(--primary-color-lighten)] px-2 py-1 transition-all hover:brightness-95" data-astro-cid-f5u63ayj> <p class="text-center text-sm text-[var(--primary-color)]" data-astro-cid-f5u63ayj> Video </p> </a><a href="/tags/0e52f6b9" class="tag m-1 grow rounded-md bg-[var(--primary-color-lighten)] px-2 py-1 transition-all hover:brightness-95" data-astro-cid-f5u63ayj> <p class="text-center text-sm text-[var(--primary-color)]" data-astro-cid-f5u63ayj> Markdown </p> </a><a href="/tags/61c27442" class="tag m-1 grow rounded-md bg-[var(--primary-color-lighten)] px-2 py-1 transition-all hover:brightness-95" data-astro-cid-f5u63ayj> <p class="text-center text-sm text-[var(--primary-color)]" data-astro-cid-f5u63ayj> Blogging </p> </a>  </div> </div> </div> </div>  </div> <div class="transition-leaving w-full space-y-8" data-astro-cid-ouamjn2i> <main class="content onload-animation" data-astro-cid-ouamjn2i>   <div class="article-wrapper" data-astro-cid-gjtny2mx> <div class="article" data-astro-cid-gjtny2mx> <div class="prose prose-sm lg:prose-base dark:prose-invert shrink max-w-full ">  <div class="hidden" data-pagefind-body data-pagefind-weight="10" data-pagefind-meta="title">Markdown Tutorial</div><div data-pagefind-body><h1 id="markdown-tutorial"><a aria-hidden="true" tabindex="-1" href="#markdown-tutorial"><span class="icon icon-link"></span></a>Markdown Tutorial</h1>
+<p>A markdown example shows how to write a markdown file. This document integrates core syntax and extensions (GMF).</p>
+<ul>
+<li><a href="#block-elements">Block Elements</a>
+<ul>
+<li><a href="#paragraphs-and-line-breaks">Paragraphs and Line Breaks</a></li>
+<li><a href="#headers">Headers</a></li>
+<li><a href="#blockquotes">Blockquotes</a></li>
+<li><a href="#lists">Lists</a></li>
+<li><a href="#code-blocks">Code Blocks</a></li>
+<li><a href="#horizontal-rules">Horizontal Rules</a></li>
+<li><a href="#table">Table</a></li>
+</ul>
+</li>
+<li><a href="#span-elements">Span Elements</a>
+<ul>
+<li><a href="#links">Links</a></li>
+<li><a href="#emphasis">Emphasis</a></li>
+<li><a href="#code">Code</a></li>
+<li><a href="#images">Images</a></li>
+<li><a href="#strikethrough">Strikethrough</a></li>
+</ul>
+</li>
+<li><a href="#miscellaneous">Miscellaneous</a>
+<ul>
+<li><a href="#automatic-links">Automatic Links</a></li>
+<li><a href="#backslash-escapes">Backslash Escapes</a></li>
+</ul>
+</li>
+<li><a href="#inline-html">Inline HTML</a></li>
+</ul>
+<h2 id="block-elements"><a aria-hidden="true" tabindex="-1" href="#block-elements"><span class="icon icon-link"></span></a>Block Elements</h2>
+<h3 id="paragraphs-and-line-breaks"><a aria-hidden="true" tabindex="-1" href="#paragraphs-and-line-breaks"><span class="icon icon-link"></span></a>Paragraphs and Line Breaks</h3>
+<h4 id="paragraphs"><a aria-hidden="true" tabindex="-1" href="#paragraphs"><span class="icon icon-link"></span></a>Paragraphs</h4>
+<p>HTML Tag: <code>&#x3C;p></code></p>
+<p>One or more blank lines. (A blank line is a line containing nothing but <strong>spaces</strong> or <strong>tabs</strong> is considered blank.)</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>This will be</span></span>
+<span class="line"><span>inline.</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>This is second paragraph.</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p>This will be
+inline.</p>
+<p>This is second paragraph.</p>
+<hr>
+<h4 id="line-breaks"><a aria-hidden="true" tabindex="-1" href="#line-breaks"><span class="icon icon-link"></span></a>Line Breaks</h4>
+<p>HTML Tag: <code>&#x3C;br /></code></p>
+<p>End a line with <strong>two or more spaces</strong>.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>This will be not</span></span>
+<span class="line"><span>inline.</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p>This will be not<br>
+inline.</p>
+<hr>
+<h3 id="headers"><a aria-hidden="true" tabindex="-1" href="#headers"><span class="icon icon-link"></span></a>Headers</h3>
+<p>Markdown supports two styles of headers, Setext and atx.</p>
+<h4 id="setext"><a aria-hidden="true" tabindex="-1" href="#setext"><span class="icon icon-link"></span></a>Setext</h4>
+<p>HTML Tags: <code>&#x3C;h1></code>, <code>&#x3C;h2></code></p>
+<p>“Underlined” using <strong>equal signs (=)</strong> as <code>&#x3C;h1></code> and <strong>dashes (-)</strong> as <code>&#x3C;h2></code> in any number.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>This is an H1</span></span>
+<span class="line"><span>=============</span></span>
+<span class="line"><span>This is an H2</span></span>
+<span class="line"><span>-------------</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<h1 id="this-is-an-h1"><a aria-hidden="true" tabindex="-1" href="#this-is-an-h1"><span class="icon icon-link"></span></a>This is an H1</h1>
+<h2 id="this-is-an-h2"><a aria-hidden="true" tabindex="-1" href="#this-is-an-h2"><span class="icon icon-link"></span></a>This is an H2</h2>
+<hr>
+<h4 id="atx"><a aria-hidden="true" tabindex="-1" href="#atx"><span class="icon icon-link"></span></a>atx</h4>
+<p>HTML Tags: <code>&#x3C;h1></code>, <code>&#x3C;h2></code>, <code>&#x3C;h3></code>, <code>&#x3C;h4></code>, <code>&#x3C;h5></code>, <code>&#x3C;h6></code></p>
+<p>Uses 1-6 <strong>hash characters (#)</strong> at the start of the line, corresponding to <code>&#x3C;h1></code> - <code>&#x3C;h6></code>.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span># This is an H1</span></span>
+<span class="line"><span>## This is an H2</span></span>
+<span class="line"><span>###### This is an H6</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<h1 id="this-is-an-h1-1"><a aria-hidden="true" tabindex="-1" href="#this-is-an-h1-1"><span class="icon icon-link"></span></a>This is an H1</h1>
+<h2 id="this-is-an-h2-1"><a aria-hidden="true" tabindex="-1" href="#this-is-an-h2-1"><span class="icon icon-link"></span></a>This is an H2</h2>
+<h6 id="this-is-an-h6"><a aria-hidden="true" tabindex="-1" href="#this-is-an-h6"><span class="icon icon-link"></span></a>This is an H6</h6>
+<hr>
+<p>Optionally, you may “close” atx-style headers. The closing hashes <strong>don’t need to match</strong> the number of hashes used to open the header.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span># This is an H1 #</span></span>
+<span class="line"><span>## This is an H2 ##</span></span>
+<span class="line"><span>### This is an H3 ######</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<h1 id="this-is-an-h1-2"><a aria-hidden="true" tabindex="-1" href="#this-is-an-h1-2"><span class="icon icon-link"></span></a>This is an H1</h1>
+<h2 id="this-is-an-h2-2"><a aria-hidden="true" tabindex="-1" href="#this-is-an-h2-2"><span class="icon icon-link"></span></a>This is an H2</h2>
+<h3 id="this-is-an-h3"><a aria-hidden="true" tabindex="-1" href="#this-is-an-h3"><span class="icon icon-link"></span></a>This is an H3</h3>
+<hr>
+<h3 id="blockquotes"><a aria-hidden="true" tabindex="-1" href="#blockquotes"><span class="icon icon-link"></span></a>Blockquotes</h3>
+<p>HTML Tag: <code>&#x3C;blockquote></code></p>
+<p>Markdown uses email-style <strong>></strong> characters for blockquoting. It looks best if you hard wrap the text and put a > before every line.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>> This is a blockquote with two paragraphs. Lorem ipsum dolor sit amet,</span></span>
+<span class="line"><span>> consectetuer adipiscing elit. Aliquam hendrerit mi posuere lectus.</span></span>
+<span class="line"><span>> Vestibulum enim wisi, viverra nec, fringilla in, laoreet vitae, risus.</span></span>
+<span class="line"><span>></span></span>
+<span class="line"><span>> Donec sit amet nisl. Aliquam semper ipsum sit amet velit. Suspendisse</span></span>
+<span class="line"><span>> id sem consectetuer libero luctus adipiscing.</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<blockquote>
+<p>This is a blockquote with two paragraphs. Lorem ipsum dolor sit amet,
+consectetuer adipiscing elit. Aliquam hendrerit mi posuere lectus.
+Vestibulum enim wisi, viverra nec, fringilla in, laoreet vitae, risus.</p>
+<p>Donec sit amet nisl. Aliquam semper ipsum sit amet velit. Suspendisse
+id sem consectetuer libero luctus adipiscing.</p>
+</blockquote>
+<hr>
+<p>Markdown allows you to be lazy and only put the > before the first line of a hard-wrapped paragraph.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>> This is a blockquote with two paragraphs. Lorem ipsum dolor sit amet,</span></span>
+<span class="line"><span>consectetuer adipiscing elit. Aliquam hendrerit mi posuere lectus.</span></span>
+<span class="line"><span>Vestibulum enim wisi, viverra nec, fringilla in, laoreet vitae, risus.</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>> Donec sit amet nisl. Aliquam semper ipsum sit amet velit. Suspendisse</span></span>
+<span class="line"><span>id sem consectetuer libero luctus adipiscing.</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<blockquote>
+<p>This is a blockquote with two paragraphs. Lorem ipsum dolor sit amet,
+consectetuer adipiscing elit. Aliquam hendrerit mi posuere lectus.
+Vestibulum enim wisi, viverra nec, fringilla in, laoreet vitae, risus.</p>
+</blockquote>
+<blockquote>
+<p>Donec sit amet nisl. Aliquam semper ipsum sit amet velit. Suspendisse
+id sem consectetuer libero luctus adipiscing.</p>
+</blockquote>
+<hr>
+<p>Blockquotes can be nested (i.e. a blockquote-in-a-blockquote) by adding additional levels of >.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>> This is the first level of quoting.</span></span>
+<span class="line"><span>></span></span>
+<span class="line"><span>> > This is nested blockquote.</span></span>
+<span class="line"><span>></span></span>
+<span class="line"><span>> Back to the first level.</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<blockquote>
+<p>This is the first level of quoting.</p>
+<blockquote>
+<p>This is nested blockquote.</p>
+</blockquote>
+<p>Back to the first level.</p>
+</blockquote>
+<hr>
+<p>Blockquotes can contain other Markdown elements, including headers, lists, and code blocks.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>> ## This is a header.</span></span>
+<span class="line"><span>></span></span>
+<span class="line"><span>> 1.   This is the first list item.</span></span>
+<span class="line"><span>> 2.   This is the second list item.</span></span>
+<span class="line"><span>></span></span>
+<span class="line"><span>> Here's some example code:</span></span>
+<span class="line"><span>></span></span>
+<span class="line"><span>>     return shell_exec("echo $input | $markdown_script");</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<blockquote>
+<h2 id="this-is-a-header"><a aria-hidden="true" tabindex="-1" href="#this-is-a-header"><span class="icon icon-link"></span></a>This is a header.</h2>
+<ol>
+<li>This is the first list item.</li>
+<li>This is the second list item.</li>
+</ol>
+<p>Here’s some example code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>return shell_exec("echo $input | $markdown_script");</span></span></code></pre>
+</blockquote>
+<hr>
+<h3 id="lists"><a aria-hidden="true" tabindex="-1" href="#lists"><span class="icon icon-link"></span></a>Lists</h3>
+<p>Markdown supports ordered (numbered) and unordered (bulleted) lists.</p>
+<h4 id="unordered"><a aria-hidden="true" tabindex="-1" href="#unordered"><span class="icon icon-link"></span></a>Unordered</h4>
+<p>HTML Tag: <code>&#x3C;ul></code></p>
+<p>Unordered lists use <strong>asterisks (*)</strong>, <strong>pluses (+)</strong>, and <strong>hyphens (-)</strong>.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>*   Red</span></span>
+<span class="line"><span>*   Green</span></span>
+<span class="line"><span>*   Blue</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<ul>
+<li>Red</li>
+<li>Green</li>
+<li>Blue</li>
+</ul>
+<hr>
+<p>is equivalent to:</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>+   Red</span></span>
+<span class="line"><span>+   Green</span></span>
+<span class="line"><span>+   Blue</span></span></code></pre>
+<p>and:</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>-   Red</span></span>
+<span class="line"><span>-   Green</span></span>
+<span class="line"><span>-   Blue</span></span></code></pre>
+<h4 id="ordered"><a aria-hidden="true" tabindex="-1" href="#ordered"><span class="icon icon-link"></span></a>Ordered</h4>
+<p>HTML Tag: <code>&#x3C;ol></code></p>
+<p>Ordered lists use numbers followed by periods:</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>1.  Bird</span></span>
+<span class="line"><span>2.  McHale</span></span>
+<span class="line"><span>3.  Parish</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<ol>
+<li>Bird</li>
+<li>McHale</li>
+<li>Parish</li>
+</ol>
+<hr>
+<p>It’s possible to trigger an ordered list by accident, by writing something like this:</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>1986. What a great season.</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<ol start="1986">
+<li>What a great season.</li>
+</ol>
+<hr>
+<p>You can <strong>backslash-escape (\)</strong> the period:</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>1986\. What a great season.</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p>1986. What a great season.</p>
+<hr>
+<h4 id="indented"><a aria-hidden="true" tabindex="-1" href="#indented"><span class="icon icon-link"></span></a>Indented</h4>
+<h5 id="blockquote"><a aria-hidden="true" tabindex="-1" href="#blockquote"><span class="icon icon-link"></span></a>Blockquote</h5>
+<p>To put a blockquote within a list item, the blockquote’s > delimiters need to be indented:</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>*   A list item with a blockquote:</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    > This is a blockquote</span></span>
+<span class="line"><span>    > inside a list item.</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<ul>
+<li>
+<p>A list item with a blockquote:</p>
+<blockquote>
+<p>This is a blockquote
+inside a list item.</p>
+</blockquote>
+</li>
+</ul>
+<hr>
+<h5 id="code-block"><a aria-hidden="true" tabindex="-1" href="#code-block"><span class="icon icon-link"></span></a>Code Block</h5>
+<p>To put a code block within a list item, the code block needs to be indented twice — <strong>8 spaces</strong> or <strong>two tabs</strong>:</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>*   A list item with a code block:</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>        &#x3C;code goes here></span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<ul>
+<li>
+<p>A list item with a code block:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>&#x3C;code goes here></span></span></code></pre>
+</li>
+</ul>
+<hr>
+<h5 id="nested-list"><a aria-hidden="true" tabindex="-1" href="#nested-list"><span class="icon icon-link"></span></a>Nested List</h5>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>* A</span></span>
+<span class="line"><span>  * A1</span></span>
+<span class="line"><span>  * A2</span></span>
+<span class="line"><span>* B</span></span>
+<span class="line"><span>* C</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<ul>
+<li>A
+<ul>
+<li>A1</li>
+<li>A2</li>
+</ul>
+</li>
+<li>B</li>
+<li>C</li>
+</ul>
+<hr>
+<h3 id="code-blocks"><a aria-hidden="true" tabindex="-1" href="#code-blocks"><span class="icon icon-link"></span></a>Code Blocks</h3>
+<p>HTML Tag: <code>&#x3C;pre></code></p>
+<p>Indent every line of the block by at least <strong>4 spaces</strong> or <strong>1 tab</strong>.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>This is a normal paragraph:</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    This is a code block.</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p>This is a normal paragraph:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>This is a code block.</span></span></code></pre>
+<hr>
+<p>A code block continues until it reaches a line that is not indented (or the end of the article).</p>
+<p>Within a code block, <strong><em>ampersands (&#x26;)</em></strong> and angle <strong>brackets (&#x3C; and >)</strong> are automatically converted into HTML entities.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>    &#x3C;div class="footer"></span></span>
+<span class="line"><span>        &#x26;copy; 2004 Foo Corporation</span></span>
+<span class="line"><span>    &#x3C;/div></span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>&#x3C;div class="footer"></span></span>
+<span class="line"><span>    &#x26;copy; 2004 Foo Corporation</span></span>
+<span class="line"><span>&#x3C;/div></span></span></code></pre>
+<hr>
+<p>Following sections Fenced Code Blocks and Syntax Highlighting are extensions, you can use the other way to write the code block.</p>
+<h4 id="fenced-code-blocks"><a aria-hidden="true" tabindex="-1" href="#fenced-code-blocks"><span class="icon icon-link"></span></a>Fenced Code Blocks</h4>
+<p>Just wrap your code in <code>```</code> (as shown below) and you won’t need to indent it by four spaces.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>Here's an example:</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>```</span></span>
+<span class="line"><span>function test() {</span></span>
+<span class="line"><span>  console.log("notice the blank line before this function?");</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span>```</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p>Here’s an example:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>function test() {</span></span>
+<span class="line"><span>  console.log("notice the blank line before this function?");</span></span>
+<span class="line"><span>}</span></span></code></pre>
+<hr>
+<h4 id="syntax-highlighting"><a aria-hidden="true" tabindex="-1" href="#syntax-highlighting"><span class="icon icon-link"></span></a>Syntax Highlighting</h4>
+<p>In your fenced block, add an optional language identifier and we’ll run it through syntax highlighting (<a href="https://github.com/github/linguist/blob/master/lib/linguist/languages.yml">Support Languages</a>).</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>```ruby</span></span>
+<span class="line"><span>require 'redcarpet'</span></span>
+<span class="line"><span>markdown = Redcarpet.new("Hello World!")</span></span>
+<span class="line"><span>puts markdown.to_html</span></span>
+<span class="line"><span>```</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="ruby"><code><span class="line"><span style="color:#FF7B72">require</span><span style="color:#A5D6FF"> 'redcarpet'</span></span>
+<span class="line"><span style="color:#FFA657">markdown</span><span style="color:#FF7B72"> =</span><span style="color:#79C0FF"> Redcarpet</span><span style="color:#E6EDF3">.</span><span style="color:#FF7B72">new</span><span style="color:#E6EDF3">(</span><span style="color:#A5D6FF">"Hello World!"</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#79C0FF">puts</span><span style="color:#E6EDF3"> markdown.</span><span style="color:#D2A8FF">to_html</span></span></code></pre>
+<hr>
+<h3 id="horizontal-rules"><a aria-hidden="true" tabindex="-1" href="#horizontal-rules"><span class="icon icon-link"></span></a>Horizontal Rules</h3>
+<p>HTML Tag: <code>&#x3C;hr /></code>
+Places <strong>three or more hyphens (-), asterisks (*), or underscores (_)</strong> on a line by themselves. You may use spaces between the hyphens or asterisks.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>* * *</span></span>
+<span class="line"><span>***</span></span>
+<span class="line"><span>*****</span></span>
+<span class="line"><span>- - -</span></span>
+<span class="line"><span>---------------------------------------</span></span>
+<span class="line"><span>___</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<hr>
+<hr>
+<hr>
+<hr>
+<hr>
+<hr>
+<hr>
+<h3 id="table"><a aria-hidden="true" tabindex="-1" href="#table"><span class="icon icon-link"></span></a>Table</h3>
+<p>HTML Tag: <code>&#x3C;table></code></p>
+<p>It’s an extension.</p>
+<p>Separates column by <strong>pipe (|)</strong> and header by <strong>dashes (-)</strong>, and uses <strong>colon (:)</strong> for alignment.</p>
+<p>The outer <strong>pipes (|)</strong> and alignment are optional. There are <strong>3 delimiters</strong> each cell at least for separating header.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>| Left | Center | Right |</span></span>
+<span class="line"><span>|:-----|:------:|------:|</span></span>
+<span class="line"><span>|aaa   |bbb     |ccc    |</span></span>
+<span class="line"><span>|ddd   |eee     |fff    |</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span> A | B</span></span>
+<span class="line"><span>---|---</span></span>
+<span class="line"><span>123|456</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>A |B</span></span>
+<span class="line"><span>--|--</span></span>
+<span class="line"><span>12|45</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th align="left">Left</th><th align="center">Center</th><th align="right">Right</th></tr></thead><tbody><tr><td align="left">aaa</td><td align="center">bbb</td><td align="right">ccc</td></tr><tr><td align="left">ddd</td><td align="center">eee</td><td align="right">fff</td></tr></tbody></table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>123</td><td>456</td></tr></tbody></table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>12</td><td>45</td></tr></tbody></table>
+<hr>
+<h2 id="span-elements"><a aria-hidden="true" tabindex="-1" href="#span-elements"><span class="icon icon-link"></span></a>Span Elements</h2>
+<h3 id="links"><a aria-hidden="true" tabindex="-1" href="#links"><span class="icon icon-link"></span></a>Links</h3>
+<p>HTML Tag: <code>&#x3C;a></code></p>
+<p>Markdown supports two style of links: inline and reference.</p>
+<h4 id="inline"><a aria-hidden="true" tabindex="-1" href="#inline"><span class="icon icon-link"></span></a>Inline</h4>
+<p>Inline link format like this: <code>[Link Text](URL "Title")</code></p>
+<p>Title is optional.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>This is [an example](http://example.com/ "Title") inline link.</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>[This link](http://example.net/) has no title attribute.</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p>This is <a href="http://example.com/" title="Title">an example</a> inline link.</p>
+<p><a href="http://example.net/">This link</a> has no title attribute.</p>
+<hr>
+<p>If you’re referring to a local resource on the same server, you can use relative paths:</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>See my [About](/about/) page for details.</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p>See my <a href="/about/">About</a> page for details.</p>
+<hr>
+<h4 id="reference"><a aria-hidden="true" tabindex="-1" href="#reference"><span class="icon icon-link"></span></a>Reference</h4>
+<p>You could predefine link references. Format like this: <code>[id]: URL "Title"</code></p>
+<p>Title is also optional. And the you refer the link, format like this: <code>[Link Text][id]</code></p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>[id]: http://example.com/  "Optional Title Here"</span></span>
+<span class="line"><span>This is [an example][id] reference-style link.</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p>This is <a href="http://example.com/" title="Optional Title Here">an example</a> reference-style link.</p>
+<hr>
+<p>That is:</p>
+<ul>
+<li>Square brackets containing the link identifier (<strong>not case sensitive</strong>, optionally indented from the left margin using up to three spaces);</li>
+<li>followed by a colon;</li>
+<li>followed by one or more spaces (or tabs);</li>
+<li>followed by the URL for the link;</li>
+<li>The link URL may, optionally, be surrounded by angle brackets.</li>
+<li>optionally followed by a title attribute for the link, enclosed in double or single quotes, or enclosed in parentheses.</li>
+</ul>
+<p>The following three link definitions are equivalent:</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>[foo]: http://example.com/  "Optional Title Here"</span></span>
+<span class="line"><span>[foo]: http://example.com/  'Optional Title Here'</span></span>
+<span class="line"><span>[foo]: http://example.com/  (Optional Title Here)</span></span>
+<span class="line"><span>[foo]: &#x3C;http://example.com/>  "Optional Title Here"</span></span></code></pre>
+<p>Uses an empty set of square brackets, the link text itself is used as the name.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>[Google]: http://google.com/</span></span>
+<span class="line"><span>[Google][]</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p><a href="http://google.com/">Google</a></p>
+<hr>
+<h3 id="emphasis"><a aria-hidden="true" tabindex="-1" href="#emphasis"><span class="icon icon-link"></span></a>Emphasis</h3>
+<p>HTML Tags: <code>&#x3C;em></code>, <code>&#x3C;strong></code></p>
+<p>Markdown treats <strong>asterisks (*)</strong> and <strong>underscores (_)</strong> as indicators of emphasis. <strong>One delimiter</strong> will be <code>&#x3C;em></code>; *<em>double delimiters</em> will be <code>&#x3C;strong></code>.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>*single asterisks*</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>_single underscores_</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>**double asterisks**</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>__double underscores__</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p><em>single asterisks</em></p>
+<p><em>single underscores</em></p>
+<p><strong>double asterisks</strong></p>
+<p><strong>double underscores</strong></p>
+<hr>
+<p>But if you surround an * or _ with spaces, it’ll be treated as a literal asterisk or underscore.</p>
+<p>You can backslash escape it:</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>\*this text is surrounded by literal asterisks\*</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p>*this text is surrounded by literal asterisks*</p>
+<hr>
+<h3 id="code"><a aria-hidden="true" tabindex="-1" href="#code"><span class="icon icon-link"></span></a>Code</h3>
+<p>HTML Tag: <code>&#x3C;code></code></p>
+<p>Wraps it with <strong>backtick quotes (`)</strong>.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>Use the `printf()` function.</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p>Use the <code>printf()</code> function.</p>
+<hr>
+<p>To include a literal backtick character within a code span, you can use <strong>multiple backticks</strong> as the opening and closing delimiters:</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>``There is a literal backtick (`) here.``</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p><code>There is a literal backtick (`) here.</code></p>
+<hr>
+<p>The backtick delimiters surrounding a code span may include spaces — one after the opening, one before the closing. This allows you to place literal backtick characters at the beginning or end of a code span:</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>A single backtick in a code span: `` ` ``</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>A backtick-delimited string in a code span: `` `foo` ``</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p>A single backtick in a code span: <code>`</code></p>
+<p>A backtick-delimited string in a code span: <code>`foo`</code></p>
+<hr>
+<h3 id="images"><a aria-hidden="true" tabindex="-1" href="#images"><span class="icon icon-link"></span></a>Images</h3>
+<p>HTML Tag: <code>&#x3C;img /></code></p>
+<p>Markdown uses an image syntax that is intended to resemble the syntax for links, allowing for two styles: inline and reference.</p>
+<h4 id="inline-1"><a aria-hidden="true" tabindex="-1" href="#inline-1"><span class="icon icon-link"></span></a>Inline</h4>
+<p>Inline image syntax looks like this: <code>![Alt text](URL "Title")</code></p>
+<p>Title is optional.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>![Alt text](/path/to/img.jpg)</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>![Alt text](/path/to/img.jpg "Optional title")</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p><img src="https://s2.loli.net/2024/08/20/5fszgXeOxmL3Wdv.webp" alt="Alt text"></p>
+<p><img src="https://s2.loli.net/2024/08/20/5fszgXeOxmL3Wdv.webp" alt="Alt text" title="Optional title"></p>
+<hr>
+<p>That is:</p>
+<ul>
+<li>An exclamation mark: !;</li>
+<li>followed by a set of square brackets, containing the alt attribute text for the image;</li>
+<li>followed by a set of parentheses, containing the URL or path to the image, and an optional title attribute enclosed in double or single quotes.</li>
+</ul>
+<h4 id="reference-1"><a aria-hidden="true" tabindex="-1" href="#reference-1"><span class="icon icon-link"></span></a>Reference</h4>
+<p>Reference-style image syntax looks like this: <code>![Alt text][id]</code></p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>[img id]: url/to/image  "Optional title attribute"</span></span>
+<span class="line"><span>![Alt text][img id]</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p><img __ASTRO_IMAGE_="{&#x22;src&#x22;:&#x22;url/to/image&#x22;,&#x22;alt&#x22;:&#x22;Alt text&#x22;,&#x22;title&#x22;:&#x22;Optional title attribute&#x22;,&#x22;index&#x22;:0}"></p>
+<hr>
+<h3 id="strikethrough"><a aria-hidden="true" tabindex="-1" href="#strikethrough"><span class="icon icon-link"></span></a>Strikethrough</h3>
+<p>HTML Tag: <code>&#x3C;del></code></p>
+<p>It’s an extension.</p>
+<p>GFM adds syntax to strikethrough text.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>~~Mistaken text.~~</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p><del>Mistaken text.</del></p>
+<hr>
+<h2 id="miscellaneous"><a aria-hidden="true" tabindex="-1" href="#miscellaneous"><span class="icon icon-link"></span></a>Miscellaneous</h2>
+<h3 id="automatic-links"><a aria-hidden="true" tabindex="-1" href="#automatic-links"><span class="icon icon-link"></span></a>Automatic Links</h3>
+<p>Markdown supports a shortcut style for creating “automatic” links for URLs and email addresses: simply surround the URL or email address with angle brackets.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>&#x3C;http://example.com/></span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>&#x3C;address@example.com></span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p><a href="http://example.com/">http://example.com/</a></p>
+<p><a href="mailto:address@example.com">address@example.com</a></p>
+<hr>
+<p>GFM will autolink standard URLs.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>https://github.com/emn178/markdown</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p><a href="https://github.com/emn178/markdown">https://github.com/emn178/markdown</a></p>
+<hr>
+<h3 id="backslash-escapes"><a aria-hidden="true" tabindex="-1" href="#backslash-escapes"><span class="icon icon-link"></span></a>Backslash Escapes</h3>
+<p>Markdown allows you to use backslash escapes to generate literal characters which would otherwise have special meaning in Markdown’s formatting syntax.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>\*literal asterisks\*</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p>*literal asterisks*</p>
+<hr>
+<p>Markdown provides backslash escapes for the following characters:</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>\   backslash</span></span>
+<span class="line"><span>`   backtick</span></span>
+<span class="line"><span>*   asterisk</span></span>
+<span class="line"><span>_   underscore</span></span>
+<span class="line"><span>{}  curly braces</span></span>
+<span class="line"><span>[]  square brackets</span></span>
+<span class="line"><span>()  parentheses</span></span>
+<span class="line"><span>#   hash mark</span></span>
+<span class="line"><span>+   plus sign</span></span>
+<span class="line"><span>-   minus sign (hyphen)</span></span>
+<span class="line"><span>.   dot</span></span>
+<span class="line"><span>!   exclamation mark</span></span></code></pre>
+<h2 id="inline-html"><a aria-hidden="true" tabindex="-1" href="#inline-html"><span class="icon icon-link"></span></a>Inline HTML</h2>
+<p>For any markup that is not covered by Markdown’s syntax, you simply use HTML itself. There’s no need to preface it or delimit it to indicate that you’re switching from Markdown to HTML; you just use the tags.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>This is a regular paragraph.</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>&#x3C;table></span></span>
+<span class="line"><span>    &#x3C;tr></span></span>
+<span class="line"><span>        &#x3C;td>Foo&#x3C;/td></span></span>
+<span class="line"><span>    &#x3C;/tr></span></span>
+<span class="line"><span>&#x3C;/table></span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>This is another regular paragraph.</span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p>This is a regular paragraph.</p>
+<table>
+    <tbody><tr>
+        <td>Foo</td>
+    </tr>
+</tbody></table>
+<p>This is another regular paragraph.</p>
+<hr>
+<p>Note that Markdown formatting syntax is <strong>not processed within block-level HTML tags</strong>.</p>
+<p>Unlike block-level HTML tags, Markdown syntax is <strong>processed within span-level tags</strong>.</p>
+<p>Code:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>&#x3C;span>**Work**&#x3C;/span></span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>&#x3C;div></span></span>
+<span class="line"><span>    **No Work**</span></span>
+<span class="line"><span>&#x3C;/div></span></span></code></pre>
+<p>Preview:</p>
+<hr>
+<p><span><strong>Work</strong></span></p>
+<div>
+  **No Work**
+</div>
+***</div>  </div> <script type="module">const n=new MutationObserver(i);n.observe(document.body,{childList:!0,subtree:!0});document.addEventListener("DOMContentLoaded",i);function i(){n.disconnect();let r=Array.from(document.querySelectorAll("pre"));for(let e of r){if(e.parentElement?.nodeName==="DIV"&&e.parentElement?.classList.contains("code-block"))continue;let o=document.createElement("div");o.className="relative code-block";let t=document.createElement("button");t.className="copy-btn btn-regular-dark absolute active:scale-90 h-8 w-8 top-2 right-2 opacity-75 text-sm p-1.5 rounded-lg transition-all ease-in-out",e.setAttribute("tabindex","0"),e.parentNode&&e.parentNode.insertBefore(o,e);let a='<svg class="copy-btn-icon copy-icon" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"><path d="M368.37-237.37q-34.48 0-58.74-24.26-24.26-24.26-24.26-58.74v-474.26q0-34.48 24.26-58.74 24.26-24.26 58.74-24.26h378.26q34.48 0 58.74 24.26 24.26 24.26 24.26 58.74v474.26q0 34.48-24.26 58.74-24.26 24.26-58.74 24.26H368.37Zm0-83h378.26v-474.26H368.37v474.26Zm-155 238q-34.48 0-58.74-24.26-24.26-24.26-24.26-58.74v-515.76q0-17.45 11.96-29.48 11.97-12.02 29.33-12.02t29.54 12.02q12.17 12.03 12.17 29.48v515.76h419.76q17.45 0 29.48 11.96 12.02 11.97 12.02 29.33t-12.02 29.54q-12.03 12.17-29.48 12.17H213.37Zm155-238v-474.26 474.26Z"/></svg>',d='<svg class="copy-btn-icon success-icon" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"><path d="m389-377.13 294.7-294.7q12.58-12.67 29.52-12.67 16.93 0 29.61 12.67 12.67 12.68 12.67 29.53 0 16.86-12.28 29.14L419.07-288.41q-12.59 12.67-29.52 12.67-16.94 0-29.62-12.67L217.41-430.93q-12.67-12.68-12.79-29.45-.12-16.77 12.55-29.45 12.68-12.67 29.62-12.67 16.93 0 29.28 12.67L389-377.13Z"/></svg>';t.innerHTML=`<div>${a} ${d}</div>
+      `,o.appendChild(e),o.appendChild(t);let c;t.addEventListener("click",async()=>{c&&clearTimeout(c);let s=e?.querySelector("code")?.innerText;s!==void 0&&(await navigator.clipboard.writeText(s),t.classList.add("success"),c=setTimeout(()=>{t.classList.remove("success")},1e3))})}n.observe(document.body,{childList:!0,subtree:!0})}</script> <style>
+  .btn-regular-dark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: oklch(0.45 0.01 var(--hue));
+  }
+
+  .btn-regular-dark:hover {
+    background-color: oklch(0.5 0.01 var(--hue));
+  }
+
+  .btn-regular-dark:active {
+    background-color: oklch(0.55 0.01 var(--hue));
+  }
+
+  .btn-regular-dark.dark {
+    background-color: oklch(0.3 0.02 var(--hue));
+  }
+
+  .btn-regular-dark.dark:hover {
+    background-color: oklch(0.35 0.03 var(--hue));
+  }
+
+  .btn-regular-dark.dark:active {
+    background-color: oklch(0.4 0.03 var(--hue));
+  }
+
+  .btn-regular-dark.success {
+    background-color: oklch(0.75 0.14 var(--hue));
+  }
+
+  .btn-regular-dark.success.dark {
+    background-color: oklch(0.75 0.14 var(--hue));
+  }
+
+  .copy-btn-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transition: all 0.3s;
+    transform: translate(-50%, -50%);
+  }
+
+  .copy-btn .copy-icon {
+    opacity: 1;
+    fill: white;
+  }
+
+  .copy-btn .copy-icon.dark {
+    fill: rgba(255, 255, 255, 0.75);
+  }
+
+  .copy-btn.success .copy-icon {
+    opacity: 0;
+  }
+
+  .copy-btn .success-icon {
+    fill: white;
+    opacity: 0;
+  }
+
+  .copy-btn.success .success-icon {
+    opacity: 1;
+  }
+</style> <div class="fonts relative mt-4 h-32 w-full rounded-lg bg-gray-100 px-4 py-4 lg:h-36 dark:bg-[var(--background-color)]" data-astro-cid-er4ir5rx> <div class="absolute left-4 top-4 z-10 flex h-24 flex-col justify-between lg:h-28" data-astro-cid-er4ir5rx> <div class="flex flex-col items-start space-y-1" data-astro-cid-er4ir5rx> <p class="!my-0 pl-1 font-bold text-[var(--text-color)]" data-astro-cid-er4ir5rx>Markdown Tutorial</p> <a class="rounded-md px-1 py-0.5 text-sm transition-all hover:bg-[var(--primary-color-lighten)]" id="source-link" href="https://github.com/emn178/markdown" data-astro-cid-er4ir5rx>https://github.com/emn178/markdown</a> </div> <div class="ml-1 flex flex-row space-x-4 lg:space-x-8" data-astro-cid-er4ir5rx> <div class="flex flex-col" data-astro-cid-er4ir5rx> <span class="select-none text-sm text-[var(--text-color-lighten)]" data-astro-cid-er4ir5rx>Author</span> <p class="!my-0 line-clamp-1 text-sm text-[var(--text-color)] lg:text-base" data-astro-cid-er4ir5rx> emn178 </p> </div> <div class="flex flex-col" data-astro-cid-er4ir5rx> <span class="select-none text-sm text-[var(--text-color-lighten)]" data-astro-cid-er4ir5rx>Publish Date</span> <p class="!my-0 line-clamp-1 text-sm text-[var(--text-color)] lg:text-base" data-astro-cid-er4ir5rx> 01 - 20 - 2025 </p> </div> <div class="flex flex-col" data-astro-cid-er4ir5rx> <span class="select-none text-sm text-[var(--text-color-lighten)]" data-astro-cid-er4ir5rx>License</span> <!-- with special license -->  <p class="!my-0 line-clamp-1 text-sm text-[var(--text-color)] lg:text-base" data-astro-cid-er4ir5rx> Unlicensed </p> <!-- without special license -->  </div> </div> </div> <div class="relative right-0 top-1/2 z-0 flex h-32 -translate-y-1/2 overflow-hidden lg:h-36" data-astro-cid-er4ir5rx> <svg width="230" height="230" viewBox="0 0 20 20" class="absolute right-0 top-1/2 -translate-y-1/2 text-gray-300 dark:text-[var(--card-color)]" data-astro-cid-er4ir5rx="true" data-icon="ooui:logo-cc">   <symbol id="ai:ooui:logo-cc"><path fill="currentColor" d="M10 18a8 8 0 1 1 8-8a8 8 0 0 1-8 8m0-18A9.94 9.94 0 0 0 0 10a9.94 9.94 0 0 0 10 10a9.94 9.94 0 0 0 10-10A9.94 9.94 0 0 0 10 0"/><path fill="currentColor" d="M13.49 11.67c-1 0-1.43-.57-1.43-1.71s.43-1.71 1.43-1.71c.57 0 .86.29 1.14.86l1.29-.71A2.8 2.8 0 0 0 13.2 7a2.9 2.9 0 0 0-2.14.86A2.7 2.7 0 0 0 10.2 10a3 3 0 0 0 .86 2.29a2.9 2.9 0 0 0 2.14.86a3.24 3.24 0 0 0 2.71-1.57L14.63 11a1.46 1.46 0 0 1-1.14.71zm-6 0c-1 0-1.43-.57-1.43-1.71s.43-1.71 1.43-1.71c.57 0 .86.29 1.14.86l1.29-.71A2.8 2.8 0 0 0 7.2 7a2.9 2.9 0 0 0-2.14.86A2.7 2.7 0 0 0 4.2 10a3 3 0 0 0 .86 2.29a2.9 2.9 0 0 0 2.14.86a3.24 3.24 0 0 0 2.71-1.57L8.63 11a1.46 1.46 0 0 1-1.14.71z"/></symbol><use href="#ai:ooui:logo-cc"></use>  </svg> </div> </div>  </div> </div>  </main> <div class="mx-3 space-y-4" data-astro-cid-sz7xmlte> <!-- Owner info card --> <div class="rounded-3xl bg-[var(--card-color)] transition-all lg:hidden" data-astro-cid-sz7xmlte> <div class="flex flex-row md:flex-col md:pt-4" data-astro-cid-sz7xmlte> <a href="/about" class="relative h-40 w-40 md:hidden" data-astro-cid-sz7xmlte> <img class="lozad absolute left-0 top-0 h-40 rounded-l-3xl" data-src="https://s2.loli.net/2025/01/25/FPpTrQSezM8ivbl.webp" alt="Avatar" data-astro-cid-sz7xmlte> <div class="absolute right-0 top-0 h-40 w-20 bg-gradient-to-l from-[var(--card-color)]" data-astro-cid-sz7xmlte></div> </a> <a class="mx-auto hidden h-40 w-40 cursor-pointer rounded-3xl transition-all hover:brightness-75 md:block" data-astro-cid-sz7xmlte> <img class="lozad h-40 rounded-3xl" data-src="https://s2.loli.net/2025/01/25/FPpTrQSezM8ivbl.webp" alt="Avatar" data-astro-cid-sz7xmlte> </a> <div class="flex grow flex-col justify-center space-y-4 p-4" data-astro-cid-sz7xmlte> <div class="flex flex-col items-center" data-astro-cid-sz7xmlte> <a href="/about" class="line-clamp-1 text-xl font-semibold text-[var(--text-color)]" data-astro-cid-sz7xmlte> WhitePaper 白芷 </a> <span class="mb-2 mt-1 h-1 w-8 rounded-full bg-[var(--primary-color)]" data-astro-cid-sz7xmlte></span> <p class="line-clamp-1 text-[var(--text-color-lighten)]" data-astro-cid-sz7xmlte> Ad Astra Per Aspera. </p> </div> <ul class="flex flex-row items-center justify-center space-x-6" data-astro-cid-sz7xmlte> <li data-astro-cid-sz7xmlte> <a href="https://github.com/WhitePaper233" class="text-[var(--primary-color)]" data-astro-cid-sz7xmlte> <svg width="24" height="24" viewBox="0 0 24 24" data-astro-cid-sz7xmlte="true" data-icon="line-md:github-loop">   <use href="#ai:line-md:github-loop"></use>  </svg> </a> </li><li data-astro-cid-sz7xmlte> <a href="https://space.bilibili.com/22433608" class="text-[var(--primary-color)]" data-astro-cid-sz7xmlte> <svg width="24" height="24" viewBox="0 0 24 24" data-astro-cid-sz7xmlte="true" data-icon="mingcute:bilibili-line">   <use href="#ai:mingcute:bilibili-line"></use>  </svg> </a> </li><li data-astro-cid-sz7xmlte> <a href="https://music.163.com/#/user/home?id=125291648" class="text-[var(--primary-color)]" data-astro-cid-sz7xmlte> <svg width="24" height="24" viewBox="0 0 24 24" data-astro-cid-sz7xmlte="true" data-icon="mingcute:netease-music-line">   <use href="#ai:mingcute:netease-music-line"></use>  </svg> </a> </li> </ul> </div> </div> </div> <!-- Category card --> <div class="rounded-3xl bg-[var(--card-color)] p-4 transition-all lg:hidden" data-astro-cid-sz7xmlte> <div class="mb-2 flex flex-row items-center space-x-2 pl-1.5" data-astro-cid-sz7xmlte> <span class="h-6 w-1 rounded-full bg-[var(--primary-color)]" data-astro-cid-sz7xmlte></span> <span class="text-xl font-semibold text-[var(--text-color)]" data-astro-cid-sz7xmlte> Categories </span> </div> <div class="relative grid grid-cols-2 gap-1 md:grid-cols-3" data-astro-cid-sz7xmlte> <a href="/categories/e68ee04d" class="category flex flex-row items-center justify-between rounded-lg px-2 py-1.5 transition-all hover:bg-[var(--primary-color-lighten)]" data-astro-cid-sz7xmlte> <p class="line-clamp-1 text-[var(--text-color)] transition-all" data-astro-cid-sz7xmlte> Examples </p> <span class="rounded-md bg-[var(--primary-color-lighten)] px-2.5 py-0.5 text-[var(--primary-color)]" data-astro-cid-sz7xmlte> 3 </span> </a>  </div> </div> <!-- Tag card --> <div class="rounded-3xl bg-[var(--card-color)] p-4 transition-all lg:hidden" data-astro-cid-sz7xmlte> <div class="mb-2 flex flex-row items-center space-x-2 pl-1.5" data-astro-cid-sz7xmlte> <span class="h-6 w-1 rounded-full bg-[var(--primary-color)]" data-astro-cid-sz7xmlte></span> <span class="text-xl font-semibold text-[var(--text-color)]" data-astro-cid-sz7xmlte> Tags </span> </div> <div class="relative flex flex-row flex-wrap" data-astro-cid-sz7xmlte> <a href="/tags/d029f87e" class="tag m-1 rounded-md bg-[var(--primary-color-lighten)] px-2 py-1 transition-all hover:brightness-95" data-astro-cid-sz7xmlte> <p class="text-sm text-[var(--primary-color)]" data-astro-cid-sz7xmlte> Example </p> </a><a href="/tags/d534be82" class="tag m-1 rounded-md bg-[var(--primary-color-lighten)] px-2 py-1 transition-all hover:brightness-95" data-astro-cid-sz7xmlte> <p class="text-sm text-[var(--primary-color)]" data-astro-cid-sz7xmlte> Video </p> </a><a href="/tags/0e52f6b9" class="tag m-1 rounded-md bg-[var(--primary-color-lighten)] px-2 py-1 transition-all hover:brightness-95" data-astro-cid-sz7xmlte> <p class="text-sm text-[var(--primary-color)]" data-astro-cid-sz7xmlte> Markdown </p> </a><a href="/tags/61c27442" class="tag m-1 rounded-md bg-[var(--primary-color-lighten)] px-2 py-1 transition-all hover:brightness-95" data-astro-cid-sz7xmlte> <p class="text-sm text-[var(--primary-color)]" data-astro-cid-sz7xmlte> Blogging </p> </a>  </div> </div> <!-- Site footer --> <footer data-astro-cid-sz7xmlte> <div class="divide-y divide-dashed divide-black/25 py-4 lg:pt-0 dark:divide-white/25" data-astro-cid-sz7xmlte> <div data-astro-cid-sz7xmlte></div> <div data-astro-cid-sz7xmlte></div> </div> <div class="flex w-full flex-col items-center text-sm text-[var(--text-color-lighten)]" data-astro-cid-sz7xmlte> <p data-astro-cid-sz7xmlte>
+© 2026 WhitePaper 白芷 All Rights Reserved.
+</p> <p data-astro-cid-sz7xmlte>
+Powered By <a class="link" href="https://github.com/WhitePaper233/yukina" data-astro-cid-sz7xmlte>Yukina</a> & <a class="link" href="https://astro.build/" data-astro-cid-sz7xmlte>Astro</a> </p> <p data-astro-cid-sz7xmlte> <a class="link" href="https://yukina-blog.vercel.app/sitemap-index.xml" data-astro-cid-sz7xmlte>SiteMap</a> / <a class="link" href="/rss.xml" data-astro-cid-sz7xmlte>RSS</a> </p> </div> </footer> </div>  </div> </div> </div>  </body></html>  <!-- <Fragment set:html={tocHTMLString} /> -->

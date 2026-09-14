@@ -2,28 +2,64 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { defaultDraft } from "../lib/site-document.ts";
 import {
+  buildLocalPreviewSlots,
+  buildTemplateCapabilitySummary,
   checkSelectedTargetConformance,
   isConcreteSelectedTarget,
   nonVisualTemplateNotice,
   preflightTemplateSlots,
+  resolveOperationTarget,
   selectedTargetMismatchMessage,
   shouldEnforceSelectedTarget,
   unsupportedTemplateSlotMessage,
+  validateOperationScope,
 } from "../lib/template-slot-guard.ts";
 import type { SiteOperation } from "../lib/site-operations.ts";
 
 test("keeps direct API callers backward compatible when no slot report is provided", () => {
   const result = preflightTemplateSlots({
     draft: defaultDraft,
-    operations: [{ op: "update_card", section: "services", index: 1, locale: "zh", title: "产线集成" }],
+    operations: [{ op: "update_item", section: "services", index: 1, locale: "zh", title: "产线集成" }],
   });
   assert.deepEqual(result, { unsupportedTargets: [], nonVisualTargets: [] });
+});
+
+test("template capability summary exposes manifest constraints without leaking selectors", () => {
+  const summary = buildTemplateCapabilitySummary("forge", "zh");
+  assert.equal(summary.templateId, "forge");
+  assert.equal(summary.manifestVersion, 1);
+  assert.deepEqual(summary.locales, ["zh", "en"]);
+  assert.ok(summary.editableSlots.includes("hero.title"));
+  assert.ok(summary.editableSlots.includes("products"));
+  assert.ok(summary.nonContentSlots.includes("brand.logo"));
+  assert.equal("selector" in summary, false);
+});
+
+test("local preview capabilities only advertise fields rendered by SiteRenderer", () => {
+  // 2026-09-10：`defaultDraft.products` 不再预置演示商品（此前是 FM-2401/2402/2403，
+  // 会让成品站显示"别人的产品"）。本测试原本断言 `products.FM-2401.category`——
+  // 那等于把演示 SKU 钉死在契约里。改为注入一个商品，验证**商品槽位本身**仍被声明。
+  const draftWithProduct = {
+    ...defaultDraft,
+    products: [{ ...defaultDraft.products[0], sku: "TEST-001" } as (typeof defaultDraft.products)[number]],
+  };
+  const slots = buildLocalPreviewSlots(defaultDraft);
+  assert.ok(slots.includes("companyName.zh"));
+  assert.ok(slots.includes("industry.zh"));
+  assert.ok(slots.includes("navigation.services.en"));
+  assert.ok(slots.includes("services.items.1.title.zh"));
+  assert.ok(buildLocalPreviewSlots(draftWithProduct).includes("products.TEST-001.category"));
+  assert.ok(slots.includes("features.visibility"));
+  assert.equal(slots.includes("siteName.zh"), false);
+  assert.equal(slots.includes("features.items.0.title.zh"), false);
+  assert.equal(slots.includes("services.intro.zh"), false);
+  assert.equal(slots.includes("contact.phone.zh"), false);
 });
 
 test("blocks a service card edit when the current template has no matching card slot", () => {
   const result = preflightTemplateSlots({
     draft: defaultDraft,
-    operations: [{ op: "update_card", section: "services", index: 1, locale: "zh", title: "产线集成" }],
+    operations: [{ op: "update_item", section: "services", index: 1, locale: "zh", title: "产线集成" }],
     availableSlots: ["companyName.zh", "hero.title.zh", "hero.subtitle.zh"],
   });
   assert.deepEqual(result.unsupportedTargets, ["services.items.1.title.zh"]);
@@ -62,7 +98,7 @@ test("treats project metadata as visible when a template explicitly maps it", ()
 test("blocks the whole multi-target change when any visible target is unsupported", () => {
   const operations: SiteOperation[] = [
     { op: "set_text", target: "hero.title", locale: "zh", value: "可靠制造" },
-    { op: "update_card", section: "services", index: 1, locale: "zh", title: "产线集成" },
+    { op: "update_item", section: "services", index: 1, locale: "zh", title: "产线集成" },
   ];
   const result = preflightTemplateSlots({
     draft: defaultDraft,
@@ -76,7 +112,7 @@ test("resolves a removed card id to its current visible index", () => {
   const item = defaultDraft.content.services.items[1];
   const result = preflightTemplateSlots({
     draft: defaultDraft,
-    operations: [{ op: "remove_card", section: "services", itemId: item.id }],
+    operations: [{ op: "remove_item", section: "services", itemId: item.id }],
     availableSlots: ["services.items.1.title.zh"],
   });
   assert.deepEqual(result.unsupportedTargets, []);
@@ -112,11 +148,32 @@ test("rejects an old session target when the user refers to an exact selected sl
   const result = checkSelectedTargetConformance({
     message: "把我刚才选中的位置改成：精准智造，稳定交付",
     selectedTarget: "hero.title.zh",
-    operations: [{ op: "update_card", section: "services", index: 1, locale: "zh", title: "精准智造" }],
+    operations: [{ op: "update_item", section: "services", index: 1, locale: "zh", title: "精准智造" }],
     draft: defaultDraft,
   });
   assert.equal(result.enforced, true);
   assert.equal(result.matches, false);
+  assert.deepEqual(result.operationTargets, ["services.items.1.title.zh"]);
+});
+
+test("resolves a stable card id to the current index after reorder", () => {
+  const result = resolveOperationTarget(defaultDraft, "integration");
+  assert.deepEqual(result, { targetId: "services.items.1", confidence: "exact" });
+});
+
+test("rejects an operation outside the selected hero scope", () => {
+  const result = validateOperationScope({
+    op: "update_item",
+    section: "services",
+    index: 1,
+    locale: "zh",
+    title: "不应修改",
+  }, {
+    message: "修改我选中的首屏标题",
+    selectedTarget: "hero.title.zh",
+    draft: defaultDraft,
+  });
+  assert.equal(result.allowed, false);
   assert.deepEqual(result.operationTargets, ["services.items.1.title.zh"]);
 });
 
@@ -160,4 +217,21 @@ test("does not enforce generic UI target keys or explicit unrelated instructions
 test("selected-target mismatch message states that draft and history are unchanged", () => {
   assert.match(selectedTargetMismatchMessage("hero.title.zh"), /hero\.title\.zh/);
   assert.match(selectedTargetMismatchMessage("hero.title.zh"), /草稿和历史均未修改/);
+});
+
+// ---------------------------------------------------------------------------
+// 2026-09-10：「这节可以没有」应是一等公民，而不是靠运行时隐藏绕开
+// ---------------------------------------------------------------------------
+
+test("contentSlots: optionalTargets 让模板显式声明非必填槽，缺省仍全必填（零回归）", async () => {
+  const { contentSlots } = await import("../lib/template-manifests/shared.ts");
+  const byDefault = contentSlots({});
+  assert.ok(byDefault.every((slot) => slot.required), "缺省必须保持历史行为：全部必填");
+
+  const withOptional = contentSlots({}, {}, { optionalTargets: ["products"] });
+  assert.equal(withOptional.find((slot) => slot.target === "products")?.required, false);
+  assert.ok(
+    withOptional.filter((slot) => slot.target !== "products").every((slot) => slot.required),
+    "只豁免声明的那个槽，其余不受影响",
+  );
 });

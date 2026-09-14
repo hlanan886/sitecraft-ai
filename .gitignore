@@ -1,5 +1,17 @@
 node_modules
 .next
+.astro
+dist
+# ⚠️ 放行 vendor 模板的 dist（2026-09-14）：
+# 上面第 3 行 `dist` 会屏蔽**所有** dist，但模板的 dist/ 是**运行时必需产物**
+# —— `lib/template-static.ts:131` 读 `<模板>/dist/index.html`，缺了预览就白屏。
+# 模板作者自己的 `.gitignore` 也忽略 dist（上游约定：产物不入源码库），
+# 所以这里用**负向规则**放行（`!` 必须写在 `dist` 之后，否则不生效）。
+#
+# 不提交的后果（实测）：GitHub 上这 22 个模板目录变成**空指针**，
+# 验收人 clone 后一个模板都渲染不出来。20 套 dist 合计 83MB / 1239 文件。
+!vendor/open-source-templates/*/dist/
+!vendor/open-source-templates/*/dist/**
 .sitecraft-data
 .artifact-work
 artifacts
@@ -9,3 +21,35 @@ out
 !.env.example
 *.log
 *.tsbuildinfo
+test-results/
+playwright-report/
+e2e/.cache/
+e2e/test-results/
+
+# 临时/一次性产物（2026-09-10）：避免被 `git add .` 误收
+.tmp-*
+check-tmp*.mjs
+compact
+.playwright-tmp/
+.playwright-browsers/
+
+# 成品展示与诊断截图（2026-09-10）：68MB 交付产物 + 根目录探针截图，属本地证据不做版本控制
+成品展示/
+/*.png
+
+# 本轮客户旅程的证据截图（2026-09-12）：本地验收证据，不入库
+.shots/
+
+# 外部模板源码目录（2026-09-12）：
+# 4.9M，且**内部含嵌套 .git**（`secttre/.git`）——直接 add 会变成嵌入式仓库/gitlink。
+# 它不在 `open-source-templates/` 的 22 个 submodule 里，是独立拉下来的第三方行业模板。
+vendor/industry-templates/
+
+# ⚠️ `vendor/template-assets/` **不能忽略**（2026-09-12 纠正）：
+# 它是运行时必需资源——`rewriteExternalResourceReferences(html, templateId)`
+# 靠它把模板里的境外图片/CSS 换成本地路径，mirror 脚本注释明写「缺了它版式就坏」。
+# 虽然理论上可由 `npm run templates:mirror --write` 再生，但那要联网下载境外资源；
+# 交付环境不一定有网。**16M 换"模板页不依赖外网"，值得入库。**
+
+# 编辑器本地设置（2026-09-12）
+.vscode/settings.json

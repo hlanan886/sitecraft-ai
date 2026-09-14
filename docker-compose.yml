@@ -7,8 +7,15 @@ services:
       DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?DEEPSEEK_API_KEY is required}
       DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-v4-flash}
-      DEEPSEEK_MAX_TOKENS: ${DEEPSEEK_MAX_TOKENS:-6000}
+      DEEPSEEK_MAX_TOKENS: ${DEEPSEEK_MAX_TOKENS:-8000}
       DEFAULT_WORKSPACE_ID: ${DEFAULT_WORKSPACE_ID:-demo}
+      # 访问模式（2026-09-14）：
+      # 非 development 环境代码**默认 strict**（见 lib/request-context.ts:77-80），
+      # 此时除少数公开路由外全部要求网关注入三个访问头，否则 401 ——
+      # 验收/演示场景下打开就是「页面能开、数据看不到」。
+      # 本 compose 定位是**内网演示环境**，故默认 relaxed。
+      # ⚠️ 公网部署必须改为 strict，并按 docs/deploy-auth.md 配网关注头。
+      SITECRAFT_ACCESS_MODE: ${SITECRAFT_ACCESS_MODE:-relaxed}
     ports: ["3000:3000"]
     depends_on:
       postgres:
@@ -20,7 +27,7 @@ services:
       POSTGRES_DB: site_studio
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    ports: ["5432:5432"]
+    ports: ["5433:5432"]
     volumes: ["sitecraft_pg:/var/lib/postgresql/data"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d site_studio"]

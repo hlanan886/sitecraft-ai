@@ -1,0 +1,72 @@
+import type { TemplateManifest } from "./types.ts";
+import { ALL_UI_SURFACES, BOTH_LOCALES, NON_CONTENT_SLOTS, contentSlots } from "./shared.ts";
+
+export const lonestoneManifest: TemplateManifest = {
+  templateId: "lonestone",
+  displayName: "ASTROWIND / Business",
+  manifestVersion: 1,
+  runtime: "astro-static",
+  nativeLocales: ["en"],
+  outputLocales: BOTH_LOCALES,
+  localizedUi: ALL_UI_SURFACES,
+  requiredVisibleTargets: ["heroTitle"],
+  slots: contentSlots({
+      "hero.title": ["Free template for creating websites with Astro", "AstroWind"],
+    }),
+  nonContentSlots: NON_CONTENT_SLOTS,
+  presentation: [
+    {
+      presentationSlot: "hero",
+      role: "hero_centered",
+      presentAs: "首屏：深色渐变背景上居中大标题 + 副文 + 单主按钮 + 居中产品界面大图。标题一句话主张，副文两到三句。",
+      capacity: { max: 1 },
+      itemShape: "title_body",
+      anchor: "main 首屏 section：h1 大标题 + 副文 p + CTA（motion-safe 动画类）",
+    },
+    {
+      presentationSlot: "about",
+      role: "split_text_media",
+      presentAs: "公司介绍：首页无原生 about 区（该模板是产品落地页，about 在子页），由通用文本区承载；建议一段 2-4 句公司简介。",
+      nativeFallbackHost: "generated",
+      capacity: { max: 1 },
+      itemShape: "title_body",
+      anchor: "通用生成 about 区",
+    },
+    {
+      presentationSlot: "features",
+      role: "icon_row",
+      presentAs: "产品方案：原生 6 行无边框 icon_row（sm:grid-cols-2 网格），每行 = 圆角方形 svg 图标 + 左 h3 标题 + 下方 p 说明。建议正好 6 条；图标沿用模板自带。",
+      capacity: { min: 2, default: 6, max: 6 },
+      itemShape: "title_body",
+      anchor: "section#features 内 sm:grid-cols-2 网格的 div.flex.flex-row 行（flex justify-center 图标 + mt-0.5 内 h3+p）",
+    },
+    {
+      presentationSlot: "services",
+      role: "card_grid",
+      presentAs: "服务支持：无原生独立服务区，由通用服务卡区承载（深色卡片）；建议 3 条。",
+      nativeFallbackHost: "generated",
+      capacity: { min: 2, default: 3, max: 12 },
+      itemShape: "title_body",
+      anchor: "通用生成服务区",
+    },
+    {
+      presentationSlot: "products",
+      role: "product_grid",
+      presentAs: "产品中心：无原生产品卡位，由通用产品网格承载（SKU+简介+图，深色卡片）。",
+      nativeFallbackHost: "generated",
+      capacity: { min: 1, default: 6, max: 1000 },
+      itemShape: "title_body",
+      anchor: "通用生成产品网格",
+    },
+    {
+      presentationSlot: "contact",
+      role: "split_text_media",
+      presentAs: "联系板块：无原生联系区，由通用生成区承载（标题+正文+邮箱/电话/地址，深色渐变底）。",
+      nativeFallbackHost: "generated",
+      capacity: { max: 1 },
+      itemShape: "title_body",
+      anchor: "通用生成联系区",
+    },
+  ],
+  recommendation: "eligible",
+};
