@@ -1,0 +1,6 @@
+# Astroplate
+
+> astro and tailwind boilerplate
+
+This file helps language models discover the most useful content on this site.
+

@@ -1,6 +1,17 @@
 node_modules
 .next
+.astro
 dist
+# ⚠️ 放行 vendor 模板的 dist（2026-09-14）：
+# 上面第 3 行 `dist` 会屏蔽**所有** dist，但模板的 dist/ 是**运行时必需产物**
+# —— `lib/template-static.ts:131` 读 `<模板>/dist/index.html`，缺了预览就白屏。
+# 模板作者自己的 `.gitignore` 也忽略 dist（上游约定：产物不入源码库），
+# 所以这里用**负向规则**放行（`!` 必须写在 `dist` 之后，否则不生效）。
+#
+# 不提交的后果（实测）：GitHub 上这 22 个模板目录变成**空指针**，
+# 验收人 clone 后一个模板都渲染不出来。20 套 dist 合计 83MB / 1239 文件。
+!vendor/open-source-templates/*/dist/
+!vendor/open-source-templates/*/dist/**
 .sitecraft-data
 .artifact-work
 artifacts
