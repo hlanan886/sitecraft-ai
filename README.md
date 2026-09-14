@@ -15,7 +15,7 @@
 ## 本地运行
 
 ```bash
-git clone --recurse-submodules https://github.com/redmaplewww/sitecraft-ai.git
+git clone https://github.com/redmaplewww/sitecraft-ai.git
 cd sitecraft-ai
 npm install
 npm run dev
@@ -60,4 +60,4 @@ npm audit --omit=dev --audit-level=high
 npm run test:three-sites
 ```
 
-模板来源、许可证和演示地址见 [OPEN_SOURCE_TEMPLATES.md](./OPEN_SOURCE_TEMPLATES.md)。16 套上游模板通过 Git submodule 固定版本；本项目自身暂未声明开源许可证，模板继续遵循各自许可证。
+模板来源、许可证和演示地址见 [OPEN_SOURCE_TEMPLATES.md](./OPEN_SOURCE_TEMPLATES.md)。模板源码与构建产物（`dist/`）已随仓库一并纳入版本控制，clone 后即可直接渲染，无需初始化子模块；本项目自身暂未声明开源许可证，模板继续遵循各自许可证。
